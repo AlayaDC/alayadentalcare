@@ -304,14 +304,22 @@ const GlobalStyles = ({
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
-    html { scroll-behavior: smooth; }
+   html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    html { 
+      scroll-behavior: smooth; 
+    }
 
     body {
       font-family: 'Inter', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
       background: #fff;
       color: #1A2E2A;
+      /* Optional: Prevents iOS text size adjustment on rotation */
+      -webkit-text-size-adjust: 100%; 
     }
 
     h1, h2, h3, h4, h5, h6 {
