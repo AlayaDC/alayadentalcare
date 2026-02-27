@@ -163,19 +163,19 @@ const useSupabaseData = <T,>(table: string, limit: number) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const supabase = createClient();
-        const { data: result, error: fetchError } = await supabase
-          .from(table)
-          .select("*")
-          .order("position", { ascending: true })
-          .limit(limit);
+        // This line is the fix: it asks your Vercel server for the data, bypassing the ISP block
+        const response = await fetch(`/api/supabase-data?table=${table}&limit=${limit}`);
+        const result = await response.json();
 
-        if (fetchError) throw fetchError;
-        if (mounted && result) setData(result);
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to fetch data");
+        }
+
+        if (mounted && result.data) setData(result.data);
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err : new Error("Unknown error"));
-          console.error(`Error fetching ${table}:`, JSON.stringify(err, null, 2));
+          console.error(`Error fetching ${table}:`, err);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -387,6 +387,8 @@ const GlobalStyles = ({
       -webkit-backdrop-filter: blur(20px);
       
       transition: all 0.35s ease;
+      padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
     }
     .navbar-scrolled {
       background: rgba(255,255,255,0.98) !important;
@@ -495,7 +497,7 @@ const GlobalStyles = ({
 
     /* ── Hero ── */
     .hero-section {
-      min-height: 100svh;
+      min-height: 90svh;
       background: var(--dark);
       position: relative;
       overflow: hidden;
@@ -992,7 +994,7 @@ const GlobalStyles = ({
     }
 
     /* ── Section utility ── */
-    .section-py { padding: 6rem 0; }
+    .section-py { padding: 4rem 0; }
     @media (max-width: 767px) { .section-py { padding: 4rem 0; } }
     .section-label {
       font-size: 0.72rem;
