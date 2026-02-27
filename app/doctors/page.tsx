@@ -1,190 +1,256 @@
 "use client";
 
-import { useEffect, useState } from "react"; 
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import AOS from "aos";
-import "aos/dist/aos.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-
-// Your Supabase Bridge (Notice the two ../../ because we are deeper in the folders now!)
 import { createClient } from "../../utils/supabase/client";
 
-export default function DoctorsPage() {
-  const [doctors, setDoctors] = useState<any[]>([]);
+export default function ManageDoctorsPage() {
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // --- List and Edit States ---
+  const [doctorsList, setDoctorsList] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [existingImageUrl, setExistingImageUrl] = useState("");
+
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [position, setPosition] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+
   const themeColor = '#086351';
-  const accentColor = '#62B6B7';
+  const supabase = createClient();
 
-  useEffect(() => {
-    // Start the scroll animations
-    AOS.init({ 
-      duration: 600, 
-      offset: 20,       
-      once: true,
-      easing: 'ease-out-cubic',
-    });
-
-    // Fetch ALL doctors, ordered by position (No limit!)
-    const fetchAllDoctors = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('doctors')
-        .select('*')
-        .order('position', { ascending: true });
-      
-      if (data) {
-        setDoctors(data);
-      }
-      if (error) {
-        console.error("Error fetching doctors:", error);
-      }
-    };
-    
-    fetchAllDoctors();
+  // ─── SAFE VERCEL API FETCH ───
+  const fetchDoctors = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/doctors');
+      const result = await response.json();
+      if (response.ok && result.data) setDoctorsList(result.data);
+    } catch (error) {
+      console.error("Error fetching doctors:", error);
+    }
   }, []);
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+      setAuthLoading(false);
+      if (session?.user) fetchDoctors(); 
+    };
+    checkSession();
+  }, [supabase.auth, fetchDoctors]);
+
+  // ─── SAFE VERCEL UPLOAD ───
+  const uploadImageToServer = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Failed to upload image");
+    return result.publicUrl;
+  };
+
+  // ─── SAFE VERCEL CREATE/UPDATE ───
+  const handleSaveDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage("");
+
+    try {
+      let finalImageUrl = existingImageUrl;
+
+      if (imageFile) {
+        finalImageUrl = await uploadImageToServer(imageFile);
+      } else if (!existingImageUrl) {
+        throw new Error("Please select an image.");
+      }
+
+      const doctorData = { 
+        name, 
+        role, 
+        image: finalImageUrl, 
+        position: parseInt(position) 
+      };
+
+      if (editingId) {
+        // UPDATE
+        const response = await fetch('/api/admin/doctors', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingId, ...doctorData }),
+        });
+        if (!response.ok) throw new Error("Failed to update doctor");
+        setMessage("✅ Doctor updated successfully!");
+      } else {
+        // CREATE
+        const response = await fetch('/api/admin/doctors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(doctorData),
+        });
+        if (!response.ok) throw new Error("Failed to add doctor");
+        setMessage("✅ Doctor added successfully!");
+      }
+
+      resetForm();
+      fetchDoctors();
+    } catch (error: any) {
+      setMessage(`❌ Failed: ${error.message}`);
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleEdit = (doctor: any) => {
+    setEditingId(doctor.id);
+    setName(doctor.name);
+    setRole(doctor.role);
+    setPosition(doctor.position.toString());
+    setExistingImageUrl(doctor.image);
+    setImageFile(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ─── SAFE VERCEL DELETE ───
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this doctor? This cannot be undone.")) return;
+    
+    try {
+      const response = await fetch(`/api/admin/doctors?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error("Delete failed");
+      fetchDoctors();
+    } catch (error) {
+      alert("Failed to delete.");
+    }
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName(""); setRole(""); setPosition(""); setImageFile(null); setExistingImageUrl("");
+  };
+
+  if (authLoading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-success"></div></div>;
+
+  if (!user) {
+    return (
+      <div className="container py-5 text-center">
+        <h2 className="text-danger">Access Denied</h2>
+        <p>You must be logged in to view this page.</p>
+        <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link>
+      </div>
+    );
+  }
+
   return (
-    <main style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* We reuse your gorgeous CSS so this page matches the home page perfectly */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .gradient-text {
-          background: linear-gradient(135deg, ${themeColor} 0%, ${accentColor} 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .hover-lift {
-          transition: all 0.3s ease;
-        }
-        .hover-lift:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
-        }
-        .doctor-card {
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-        .doctor-card:hover .doctor-img {
-          transform: scale(1.08);
-        }
-        .doctor-img {
-          transition: transform 0.5s ease;
-        }
-        .glass-effect {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(8, 99, 81, 0.1);
-        }
-      `}} />
-
-      {/* Navigation (Sticky & Glass Effect) */}
-      <nav className="navbar navbar-expand-lg sticky-top glass-effect py-3 shadow-sm" style={{ zIndex: 1020 }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
         <div className="container">
-          <Link className="navbar-brand d-flex align-items-center gap-2" href="/#home">
-            <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px', background: `linear-gradient(135deg, ${themeColor} 0%, ${accentColor} 100%)` }}>
-              <i className="bi bi-heart-pulse-fill text-white fs-5"></i>
-            </div>
-            <span className="fw-bold fs-4 gradient-text">Alaya Dental Care</span>
+          <span className="navbar-brand fw-bold">Alaya Admin - Doctors</span>
+          <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold">
+            <i className="bi bi-arrow-left me-2"></i>Back to Menu
           </Link>
-
-          <div className="d-flex align-items-center gap-3">
-            <Link href="/#doctors" className="text-decoration-none fw-semibold text-muted hover-lift">
-              <i className="bi bi-arrow-left me-2"></i>Back Home
-            </Link>
-            <Link 
-              href="/book" 
-              className="btn text-white fw-semibold px-4 py-2 border-0 shadow-sm"
-              style={{
-                background: 'linear-gradient(135deg, #086351 0%, #62B6B7 100%)',
-                borderRadius: '25px',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
-            >
-              Book Now
-            </Link>
-          </div>
         </div>
       </nav>
 
-      {/* Header Section */}
-      <div className="container py-5 mt-4 text-center" data-aos="fade-up">
-        <span className="badge px-4 py-2 rounded-pill fw-semibold mb-3" style={{ background: 'rgba(8, 99, 81, 0.1)', color: themeColor }}>
-          Our Complete Team
-        </span>
-        <h1 className="display-4 fw-bold mb-3">
-          Meet Our <span className="gradient-text">Experts</span>
-        </h1>
-        <p className="lead text-muted mx-auto mb-5" style={{ maxWidth: '600px' }}>
-          Get to know the passionate, certified professionals dedicated to giving you the perfect smile. We pride ourselves on having the best team in the industry.
-        </p>
+      <div className="container py-5">
+        <div className="row justify-content-center">
+          <div className="col-md-10">
+            
+            {/* THE FORM */}
+            <div className="card border-0 shadow-lg p-5 mb-5" style={{ borderRadius: '20px' }}>
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <h4 className="fw-bold m-0 text-center w-100">
+                  {editingId ? "✏️ Edit Doctor" : "➕ Add a New Doctor"}
+                </h4>
+                {editingId && (
+                  <button type="button" className="btn btn-outline-secondary btn-sm position-absolute end-0 me-5" onClick={resetForm}>
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
 
-        {/* The Grid of ALL Doctors */}
-        <div className="row g-4 text-start mb-5 pb-5">
-          {doctors.length > 0 ? doctors.map((doctor, idx) => (
-            <div className="col-md-6 col-lg-3" key={idx} data-aos="fade-up" data-aos-delay={idx * 100}>
-              <div className="card border-0 shadow-sm hover-lift doctor-card overflow-hidden h-100" style={{ borderRadius: '20px' }}>
-                <div className="position-relative overflow-hidden" style={{ height: '300px' }}>
-                  <img 
-                    src={doctor.image} 
-                    alt={doctor.name} 
-                    className="w-100 h-100 doctor-img"
-                    style={{ objectFit: 'cover', objectPosition: 'top' }}
-                  />
-                  <div className="position-absolute bottom-0 start-0 w-100 p-3" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
-                    <h5 className="fw-bold text-white mb-1">{doctor.name}</h5>
-                    <p className="text-white-50 mb-0 small">{doctor.role}</p>
+              {message && <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} text-center`}>{message}</div>}
+              
+              <form onSubmit={handleSaveDoctor}>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold">Name</label>
+                    <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold">Role / Specialty</label>
+                    <input type="text" className="form-control" value={role} onChange={(e) => setRole(e.target.value)} required />
+                  </div>
+                  <div className="col-md-8">
+                    <label className="form-label fw-bold">
+                      {editingId ? "Update Photo (Leave empty to keep current)" : "Upload Photo"}
+                    </label>
+                    <input type="file" accept="image/*" className="form-control" onChange={(e) => setImageFile(e.target.files?.[0] || null)} required={!editingId} />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label fw-bold">Position Number</label>
+                    <input type="number" className="form-control" value={position} onChange={(e) => setPosition(e.target.value)} required />
                   </div>
                 </div>
-                <div className="card-body text-center p-3">
-                  <div className="d-flex justify-content-center gap-2">
-                    <a href="#" className="btn btn-sm btn-light rounded-circle" style={{ width: '35px', height: '35px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="bi bi-facebook" style={{ color: themeColor }}></i>
-                    </a>
-                    <a href="#" className="btn btn-sm btn-light rounded-circle" style={{ width: '35px', height: '35px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="bi bi-linkedin" style={{ color: themeColor }}></i>
-                    </a>
-                    <a href="#" className="btn btn-sm btn-light rounded-circle" style={{ width: '35px', height: '35px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="bi bi-envelope" style={{ color: themeColor }}></i>
-                    </a>
-                  </div>
-                </div>
-              </div>
+                <button type="submit" className="btn btn-lg w-100 text-white fw-bold mt-4" style={{ backgroundColor: themeColor }} disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : (editingId ? "Update Doctor" : "Save New Doctor")}
+                </button>
+              </form>
             </div>
-          )) : (
-            <div className="col-12 text-center py-5">
-              <div className="spinner-border text-success" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <p className="text-muted mt-3">Loading our expert team...</p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Reusing your Footer so the page feels complete */}
-      <footer className="bg-dark text-white py-4 mt-auto">
-        <div className="container py-3">
-          <div className="row align-items-center">
-            <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
-              <div className="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
-                <i className="bi bi-heart-pulse-fill fs-5" style={{ color: accentColor }}></i>
-                <h5 className="fw-bold mb-0">Alaya Dental Care</h5>
+            {/* THE DATA TABLE */}
+            <h4 className="fw-bold mb-3" style={{ color: themeColor }}>Current Doctors Database</h4>
+            <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', overflow: 'hidden' }}>
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="py-3 px-4">Pos</th>
+                      <th className="py-3">Photo</th>
+                      <th className="py-3">Name</th>
+                      <th className="py-3">Role</th>
+                      <th className="py-3 text-end px-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {doctorsList.length === 0 ? (
+                      <tr><td colSpan={5} className="text-center py-4 text-muted">No doctors found in database.</td></tr>
+                    ) : (
+                      doctorsList.map((doc) => (
+                        <tr key={doc.id}>
+                          <td className="px-4 fw-bold text-muted">{doc.position}</td>
+                          <td>
+                            <img src={doc.image} alt={doc.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }} />
+                          </td>
+                          <td className="fw-semibold">{doc.name}</td>
+                          <td>{doc.role}</td>
+                          <td className="text-end px-4">
+                            <button onClick={() => handleEdit(doc)} className="btn btn-sm btn-outline-primary me-2"><i className="bi bi-pencil-square"></i> Edit</button>
+                            <button onClick={() => handleDelete(doc.id)} className="btn btn-sm btn-outline-danger"><i className="bi bi-trash"></i> Delete</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <p className="text-white-50 mb-0 small">© 2026 Alaya Dental Care. All rights reserved.</p>
             </div>
-            <div className="col-md-6 text-center text-md-end">
-              <div className="d-flex gap-3 justify-content-center justify-content-md-end">
-                <a href="#" className="text-white-50 text-decoration-none hover-opacity"><i className="bi bi-facebook fs-5"></i></a>
-                <a href="#" className="text-white-50 text-decoration-none hover-opacity"><i className="bi bi-instagram fs-5"></i></a>
-                <a href="#" className="text-white-50 text-decoration-none hover-opacity"><i className="bi bi-whatsapp fs-5"></i></a>
-              </div>
-            </div>
+
           </div>
         </div>
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

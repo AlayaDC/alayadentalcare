@@ -27,12 +27,22 @@ export default function AdminDashboard() {
     checkSession();
   }, [supabase.auth]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+ const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError("Incorrect email or password. Access Denied.");
+    
+    // 1. Grab BOTH the data and the error
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      // Show the actual error message so you aren't guessing
+      setAuthError(error.message || "Failed to log in.");
+    } else if (data?.user) {
+      // 2. TELL REACT WE LOGGED IN! This instantly changes the screen.
+      setUser(data.user); 
+    }
+    
     setAuthLoading(false);
   };
 

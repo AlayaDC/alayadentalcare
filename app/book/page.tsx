@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
-import { createClient } from "../../utils/supabase/client";
+
 
 
 // ─── Theme (matches home page exactly) ───────────────────────────────────────
@@ -97,63 +97,56 @@ export default function BookAppointment() {
   
   // NEW: State to hold dynamically fetched booked slots
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
-  const supabase = createClient();
+ 
 
   // Current step validation
   const step1Valid = formData.name.trim() && formData.phone.trim() && formData.location && formData.service;
   const step2Valid = formData.date && formData.time;
 
   // NEW: Fetch booked slots from Supabase whenever the date or location changes
+ // ─── REMOVE the const supabase = createClient(); line ───
+
+  // NEW: Fetch booked slots from VERCEL API instead of Supabase directly
   useEffect(() => {
     const fetchBookedSlots = async () => {
       if (!formData.date || !formData.location) return;
       
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('time')
-        .eq('date', formData.date)
-        .eq('location', formData.location)
-        .neq('status', 'Cancelled'); // Exclude cancelled appointments so slots open up
+      try {
+        const response = await fetch(`/api/slots?date=${formData.date}&location=${formData.location}`);
+        const result = await response.json();
 
-      if (data) {
-        setBookedSlots(data.map(app => app.time));
-        // If the user had a time selected but someone else just booked it, reset it
-        if (data.some(app => app.time === formData.time)) {
-          setFormData(prev => ({ ...prev, time: "" }));
+        if (response.ok && result.data) {
+          setBookedSlots(result.data.map((app: { time: string }) => app.time));
+          
+          // If the user had a time selected but someone else just booked it, reset it
+          if (result.data.some((app: { time: string }) => app.time === formData.time)) {
+            setFormData(prev => ({ ...prev, time: "" }));
+          }
         }
+      } catch (error) {
+        console.error("Error fetching booked slots:", error);
       }
-      if (error) console.error("Error fetching booked slots:", error);
     };
 
     fetchBookedSlots();
   }, [formData.date, formData.location, formData.time]);
 
+  // NEW: Send the ENTIRE booking to the unified Twilio+Supabase API route
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // 1. Save to Supabase Database
-      const { error: dbError } = await supabase.from('appointments').insert([{
-        name: formData.name,
-        country_code: formData.countryCode,
-        phone: formData.phone,
-        location: formData.location,
-        service: formData.service,
-        date: formData.date,
-        time: formData.time,
-        status: 'Pending'
-      }]);
-
-      if (dbError) throw dbError;
-
-      // 2. Send WhatsApp Notification
+      // Send data to the unified API route we created in the previous step
+      // Make sure the path matches where you put that unified Twilio+Supabase code!
       const response = await fetch("/api/send-whatsapp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         setShowModal(true);
         setFormData({
           name: "",
@@ -166,7 +159,7 @@ export default function BookAppointment() {
         });
         setStep(1);
       } else {
-        alert("Oops! WhatsApp notification failed, but appointment was saved.");
+        alert(result.error || "Oops! Something went wrong processing your booking.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);

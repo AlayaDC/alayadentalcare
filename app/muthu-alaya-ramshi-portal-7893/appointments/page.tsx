@@ -15,6 +15,9 @@ export default function ManageAppointmentsPage() {
 
   useEffect(() => {
     const checkSession = async () => {
+      // Note: Since you mentioned you access the admin panel via your laptop, 
+      // this auth check is fine here. If you ever need to log in via mobile, 
+      // we'll need to move auth to the server side too!
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
       setAuthLoading(false);
@@ -23,18 +26,42 @@ export default function ManageAppointmentsPage() {
     checkSession();
   }, [supabase.auth]);
 
+  // ─── SAFE VERCEL API FETCH ───
   const fetchAppointments = async () => {
-    // Fetch and order by closest date first
-    const { data } = await supabase.from('appointments').select('*').order('date', { ascending: true });
-    if (data) setAppointments(data);
+    try {
+      const response = await fetch('/api/admin/appointments');
+      const result = await response.json();
+      
+      if (response.ok && result.data) {
+        setAppointments(result.data);
+      } else {
+        console.error("Failed to load appointments:", result.error);
+      }
+    } catch (error) {
+      console.error("Network error while fetching appointments:", error);
+    }
   };
 
+  // ─── SAFE VERCEL API UPDATE ───
   const handleUpdateStatus = async (id: number, newStatus: string) => {
-    const { error } = await supabase.from('appointments').update({ status: newStatus }).eq('id', id);
-    if (!error) {
-      fetchAppointments();
-    } else {
-      alert("Failed to update status.");
+    try {
+      const response = await fetch('/api/admin/appointments', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: id, status: newStatus }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        fetchAppointments(); // Refresh the table automatically
+      } else {
+        alert(result.error || "Failed to update status.");
+      }
+    } catch (error) {
+      alert("Network error. Please try again.");
     }
   };
 

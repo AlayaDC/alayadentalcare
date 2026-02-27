@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -16,13 +16,13 @@ export default function ManageServicesPage() {
   // --- Form States ---
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceSlug, setServiceSlug] = useState("");
-  const [serviceDesc, setServiceDesc] = useState(""); // Short description for the card
-  const [fullDesc, setFullDesc] = useState("");       // NEW: Long description for the page
+  const [serviceDesc, setServiceDesc] = useState("");
+  const [fullDesc, setFullDesc] = useState("");
   const [serviceIcon, setServiceIcon] = useState("bi-tooth");
   const [serviceColor, setServiceColor] = useState("#086351");
   const [servicePosition, setServicePosition] = useState("");
 
-  // --- NEW: Image Upload States ---
+  // --- Image Upload States ---
   const [image1File, setImage1File] = useState<File | null>(null);
   const [image2File, setImage2File] = useState<File | null>(null);
   const [image3File, setImage3File] = useState<File | null>(null);
@@ -36,6 +36,17 @@ export default function ManageServicesPage() {
   const themeColor = '#086351';
   const supabase = createClient();
 
+  // ─── SAFE VERCEL API FETCH ───
+  const fetchServices = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/services');
+      const result = await response.json();
+      if (response.ok && result.data) setServicesList(result.data);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+    }
+  }, []);
+
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -44,60 +55,70 @@ export default function ManageServicesPage() {
       if (session?.user) fetchServices(); 
     };
     checkSession();
-  }, [supabase.auth]);
+  }, [supabase.auth, fetchServices]);
 
-  const fetchServices = async () => {
-    const { data } = await supabase.from('services').select('*').order('position', { ascending: true });
-    if (data) setServicesList(data);
+  // ─── SAFE VERCEL UPLOAD ───
+  const uploadImageToServer = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', 'service-images'); // Tells the API which bucket to use!
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Failed to upload image");
+    return result.publicUrl;
   };
 
-  // Helper function to upload files to the new service-images bucket
-  const uploadImageToSupabase = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage.from('service-images').upload(fileName, file);
-    if (uploadError) throw uploadError;
-    const { data } = supabase.storage.from('service-images').getPublicUrl(fileName);
-    return data.publicUrl;
-  };
-
+  // ─── SAFE VERCEL CREATE/UPDATE ───
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage("");
 
     try {
-      // Handle the 3 image uploads securely
       let finalImg1 = existingImg1;
       let finalImg2 = existingImg2;
       let finalImg3 = existingImg3;
 
-      if (image1File) finalImg1 = await uploadImageToSupabase(image1File);
-      if (image2File) finalImg2 = await uploadImageToSupabase(image2File);
-      if (image3File) finalImg3 = await uploadImageToSupabase(image3File);
+      if (image1File) finalImg1 = await uploadImageToServer(image1File);
+      if (image2File) finalImg2 = await uploadImageToServer(image2File);
+      if (image3File) finalImg3 = await uploadImageToServer(image3File);
 
       const payload = {
         title: serviceTitle, 
         description: serviceDesc, 
-        full_description: fullDesc, // Added Full Description
+        full_description: fullDesc,
         icon: serviceIcon, 
         color: serviceColor, 
         slug: serviceSlug, 
         position: parseInt(servicePosition),
-        image1: finalImg1, // Added Images
+        image1: finalImg1,
         image2: finalImg2,
         image3: finalImg3
       };
 
       if (editingId) {
-        const { error } = await supabase.from('services').update(payload).eq('id', editingId);
-        if (error) throw error;
+        const response = await fetch('/api/admin/services', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingId, ...payload }),
+        });
+        if (!response.ok) throw new Error("Failed to update service");
         setMessage("✅ Service updated successfully!");
       } else {
-        const { error } = await supabase.from('services').insert([payload]);
-        if (error) throw error;
+        const response = await fetch('/api/admin/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error("Failed to add service");
         setMessage("✅ Service added successfully!");
       }
+
       resetForm();
       fetchServices();
     } catch (error: any) {
@@ -122,10 +143,16 @@ export default function ManageServicesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // ─── SAFE VERCEL DELETE ───
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this service?")) return;
-    const { error } = await supabase.from('services').delete().eq('id', id);
-    if (!error) fetchServices();
+    try {
+      const response = await fetch(`/api/admin/services?id=${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error("Delete failed");
+      fetchServices();
+    } catch (error) {
+      alert("Failed to delete.");
+    }
   };
 
   const resetForm = () => {
