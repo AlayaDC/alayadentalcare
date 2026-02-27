@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -25,43 +25,30 @@ export default function ManageDoctorsPage() {
   const themeColor = '#086351';
   const supabase = createClient();
 
-  // ─── SAFE VERCEL API FETCH ───
-  const fetchDoctors = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/doctors');
-      const result = await response.json();
-      if (response.ok && result.data) setDoctorsList(result.data);
-    } catch (error) {
-      console.error("Error fetching doctors:", error);
-    }
-  }, []);
-
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
       setAuthLoading(false);
-      if (session?.user) fetchDoctors(); 
+      if (session?.user) fetchDoctors(); // Fetch data if logged in!
     };
     checkSession();
-  }, [supabase.auth, fetchDoctors]);
+  }, [supabase.auth]);
 
-  // ─── SAFE VERCEL UPLOAD ───
-  const uploadImageToServer = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/admin/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Failed to upload image");
-    return result.publicUrl;
+  const fetchDoctors = async () => {
+    const { data } = await supabase.from('doctors').select('*').order('position', { ascending: true });
+    if (data) setDoctorsList(data);
   };
 
-  // ─── SAFE VERCEL CREATE/UPDATE ───
+  const uploadImageToSupabase = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from('doctor-images').upload(fileName, file);
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from('doctor-images').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
   const handleSaveDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -71,35 +58,18 @@ export default function ManageDoctorsPage() {
       let finalImageUrl = existingImageUrl;
 
       if (imageFile) {
-        finalImageUrl = await uploadImageToServer(imageFile);
+        finalImageUrl = await uploadImageToSupabase(imageFile);
       } else if (!existingImageUrl) {
         throw new Error("Please select an image.");
       }
 
-      const doctorData = { 
-        name, 
-        role, 
-        image: finalImageUrl, 
-        position: parseInt(position) 
-      };
-
       if (editingId) {
-        // UPDATE
-        const response = await fetch('/api/admin/doctors', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingId, ...doctorData }),
-        });
-        if (!response.ok) throw new Error("Failed to update doctor");
+        const { error } = await supabase.from('doctors').update({ name, role, image: finalImageUrl, position: parseInt(position) }).eq('id', editingId);
+        if (error) throw error;
         setMessage("✅ Doctor updated successfully!");
       } else {
-        // CREATE
-        const response = await fetch('/api/admin/doctors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(doctorData),
-        });
-        if (!response.ok) throw new Error("Failed to add doctor");
+        const { error } = await supabase.from('doctors').insert([{ name, role, image: finalImageUrl, position: parseInt(position) }]);
+        if (error) throw error;
         setMessage("✅ Doctor added successfully!");
       }
 
@@ -121,18 +91,14 @@ export default function ManageDoctorsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ─── SAFE VERCEL DELETE ───
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this doctor? This cannot be undone.")) return;
     
-    try {
-      const response = await fetch(`/api/admin/doctors?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error("Delete failed");
-      fetchDoctors();
-    } catch (error) {
+    const { error } = await supabase.from('doctors').delete().eq('id', id);
+    if (error) {
       alert("Failed to delete.");
+    } else {
+      fetchDoctors();
     }
   };
 

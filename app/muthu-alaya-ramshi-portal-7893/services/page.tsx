@@ -74,6 +74,7 @@ export default function ManageServicesPage() {
   };
 
   // ─── SAFE VERCEL CREATE/UPDATE ───
+  // ─── SAFE VERCEL CREATE/UPDATE ───
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -95,27 +96,36 @@ export default function ManageServicesPage() {
         icon: serviceIcon, 
         color: serviceColor, 
         slug: serviceSlug, 
-        position: parseInt(servicePosition),
+        // FIX: Prevent NaN crashing the database if position is empty
+        position: parseInt(servicePosition) || 0, 
         image1: finalImg1,
         image2: finalImg2,
         image3: finalImg3
       };
 
       if (editingId) {
+        // Uses your existing PATCH route!
         const response = await fetch('/api/admin/services', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingId, ...payload }),
         });
-        if (!response.ok) throw new Error("Failed to update service");
+        
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Failed to update service");
+        
         setMessage("✅ Service updated successfully!");
       } else {
+        // Uses your existing POST route!
         const response = await fetch('/api/admin/services', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error("Failed to add service");
+        
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Failed to add service");
+        
         setMessage("✅ Service added successfully!");
       }
 
