@@ -1534,7 +1534,7 @@ const ServicesSection = ({ services, loading }: ServicesSectionProps) => (
                 </div>
                 <h5
                   className="font-serif mb-3"
-                  style={{ color: "#fff", fontSize: "1.1rem" }}
+                  style={{ color: "#fff", fontSize: "1.1rem" ,overflowWrap:"break-word"}}
                 >
                   {service.title}
                 </h5>

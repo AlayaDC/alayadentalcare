@@ -22,6 +22,9 @@ export default function ManageDoctorsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
+  // --- Modal State ---
+  const [showModal, setShowModal] = useState(false);
+
   const themeColor = '#086351';
   const supabase = createClient();
 
@@ -30,7 +33,7 @@ export default function ManageDoctorsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
       setAuthLoading(false);
-      if (session?.user) fetchDoctors(); // Fetch data if logged in!
+      if (session?.user) fetchDoctors(); 
     };
     checkSession();
   }, [supabase.auth]);
@@ -66,14 +69,14 @@ export default function ManageDoctorsPage() {
       if (editingId) {
         const { error } = await supabase.from('doctors').update({ name, role, image: finalImageUrl, position: parseInt(position) }).eq('id', editingId);
         if (error) throw error;
-        setMessage("✅ Doctor updated successfully!");
+        alert("✅ Doctor updated successfully!");
       } else {
         const { error } = await supabase.from('doctors').insert([{ name, role, image: finalImageUrl, position: parseInt(position) }]);
         if (error) throw error;
-        setMessage("✅ Doctor added successfully!");
+        alert("✅ Doctor added successfully!");
       }
 
-      resetForm();
+      closeModal();
       fetchDoctors();
     } catch (error: any) {
       setMessage(`❌ Failed: ${error.message}`);
@@ -88,7 +91,8 @@ export default function ManageDoctorsPage() {
     setPosition(doctor.position.toString());
     setExistingImageUrl(doctor.image);
     setImageFile(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setMessage("");
+    setShowModal(true); // Open Modal
   };
 
   const handleDelete = async (id: number) => {
@@ -102,7 +106,15 @@ export default function ManageDoctorsPage() {
     }
   };
 
-  const resetForm = () => {
+  const openAddModal = () => {
+    setEditingId(null);
+    setName(""); setRole(""); setPosition(""); setImageFile(null); setExistingImageUrl("");
+    setMessage("");
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
     setEditingId(null);
     setName(""); setRole(""); setPosition(""); setImageFile(null); setExistingImageUrl("");
   };
@@ -121,102 +133,149 @@ export default function ManageDoctorsPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+      {/* Navbar */}
       <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
-        <div className="container">
-          <span className="navbar-brand fw-bold">Alaya Admin - Doctors</span>
+        <div className="container d-flex justify-content-between align-items-center">
+          <span className="navbar-brand fw-bold mb-0 text-truncate" style={{ maxWidth: '60%' }}>Alaya Admin - Doctors</span>
           <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold">
-            <i className="bi bi-arrow-left me-2"></i>Back to Menu
+            <i className="bi bi-arrow-left me-1"></i> <span className="d-none d-sm-inline">Back</span>
           </Link>
         </div>
       </nav>
 
-      <div className="container py-5">
-        <div className="row justify-content-center">
-          <div className="col-md-10">
-            
-            {/* THE FORM */}
-            <div className="card border-0 shadow-lg p-5 mb-5" style={{ borderRadius: '20px' }}>
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="fw-bold m-0 text-center w-100">
-                  {editingId ? "✏️ Edit Doctor" : "➕ Add a New Doctor"}
-                </h4>
-                {editingId && (
-                  <button type="button" className="btn btn-outline-secondary btn-sm position-absolute end-0 me-5" onClick={resetForm}>
-                    Cancel Edit
-                  </button>
-                )}
-              </div>
+      <div className="container py-4">
+        
+        {/* Header and Add Button */}
+        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-4">
+          <h4 className="fw-bold mb-3 mb-sm-0" style={{ color: themeColor }}>Doctors Database</h4>
+          <button onClick={openAddModal} className="btn text-white fw-bold px-4 py-2 shadow-sm w-100 w-sm-auto" style={{ backgroundColor: themeColor, borderRadius: '10px' }}>
+            <i className="bi bi-person-plus-fill me-2"></i> Add Doctors
+          </button>
+        </div>
 
-              {message && <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} text-center`}>{message}</div>}
-              
-              <form onSubmit={handleSaveDoctor}>
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold">Name</label>
-                    <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} required />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold">Role / Specialty</label>
-                    <input type="text" className="form-control" value={role} onChange={(e) => setRole(e.target.value)} required />
-                  </div>
-                  <div className="col-md-8">
-                    <label className="form-label fw-bold">
-                      {editingId ? "Update Photo (Leave empty to keep current)" : "Upload Photo"}
-                    </label>
-                    <input type="file" accept="image/*" className="form-control" onChange={(e) => setImageFile(e.target.files?.[0] || null)} required={!editingId} />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold">Position Number</label>
-                    <input type="number" className="form-control" value={position} onChange={(e) => setPosition(e.target.value)} required />
-                  </div>
-                </div>
-                <button type="submit" className="btn btn-lg w-100 text-white fw-bold mt-4" style={{ backgroundColor: themeColor }} disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : (editingId ? "Update Doctor" : "Save New Doctor")}
-                </button>
-              </form>
-            </div>
-
-            {/* THE DATA TABLE */}
-            <h4 className="fw-bold mb-3" style={{ color: themeColor }}>Current Doctors Database</h4>
-            <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', overflow: 'hidden' }}>
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="py-3 px-4">Pos</th>
-                      <th className="py-3">Photo</th>
-                      <th className="py-3">Name</th>
-                      <th className="py-3">Role</th>
-                      <th className="py-3 text-end px-4">Actions</th>
+        {/* --- DESKTOP VIEW: Data Table --- */}
+        <div className="d-none d-md-block card border-0 shadow-sm" style={{ borderRadius: '15px', overflow: 'hidden' }}>
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th className="py-3 px-4">Pos</th>
+                  <th className="py-3">Photo</th>
+                  <th className="py-3">Name</th>
+                  <th className="py-3">Role</th>
+                  <th className="py-3 text-end px-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {doctorsList.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center py-4 text-muted">No doctors found in database.</td></tr>
+                ) : (
+                  doctorsList.map((doc) => (
+                    <tr key={doc.id}>
+                      <td className="px-4 fw-bold text-muted">{doc.position}</td>
+                      <td>
+                        <img src={doc.image} alt={doc.name} style={{ width: '45px', height: '45px', objectFit: 'cover', borderRadius: '50%' }} />
+                      </td>
+                      <td className="fw-semibold">{doc.name}</td>
+                      <td>{doc.role}</td>
+                      <td className="text-end px-4">
+                        <button onClick={() => handleEdit(doc)} className="btn btn-sm btn-outline-primary me-2"><i className="bi bi-pencil-square"></i> Edit</button>
+                        <button onClick={() => handleDelete(doc.id)} className="btn btn-sm btn-outline-danger"><i className="bi bi-trash"></i> Delete</button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {doctorsList.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-4 text-muted">No doctors found in database.</td></tr>
-                    ) : (
-                      doctorsList.map((doc) => (
-                        <tr key={doc.id}>
-                          <td className="px-4 fw-bold text-muted">{doc.position}</td>
-                          <td>
-                            <img src={doc.image} alt={doc.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }} />
-                          </td>
-                          <td className="fw-semibold">{doc.name}</td>
-                          <td>{doc.role}</td>
-                          <td className="text-end px-4">
-                            <button onClick={() => handleEdit(doc)} className="btn btn-sm btn-outline-primary me-2"><i className="bi bi-pencil-square"></i> Edit</button>
-                            <button onClick={() => handleDelete(doc.id)} className="btn btn-sm btn-outline-danger"><i className="bi bi-trash"></i> Delete</button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+
+        {/* --- MOBILE VIEW: Card Layout --- */}
+        <div className="d-block d-md-none">
+          {doctorsList.length === 0 ? (
+             <div className="text-center py-4 text-muted bg-white shadow-sm rounded">No doctors found in database.</div>
+          ) : (
+            doctorsList.map((doc) => (
+              <div key={doc.id} className="card border-0 shadow-sm mb-3" style={{ borderRadius: '15px' }}>
+                <div className="card-body d-flex align-items-center">
+                  <img src={doc.image} alt={doc.name} className="me-3" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '50%' }} />
+                  <div className="flex-grow-1">
+                    <h6 className="fw-bold mb-1">{doc.name}</h6>
+                    <p className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>{doc.role}</p>
+                    <span className="badge bg-secondary">Pos: {doc.position}</span>
+                  </div>
+                </div>
+                <div className="card-footer bg-white border-top-0 d-flex justify-content-end gap-2 pb-3">
+                  <button onClick={() => handleEdit(doc)} className="btn btn-sm btn-outline-primary flex-fill"><i className="bi bi-pencil-square"></i> Edit</button>
+                  <button onClick={() => handleDelete(doc.id)} className="btn btn-sm btn-outline-danger flex-fill"><i className="bi bi-trash"></i> Delete</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
+
+      {/* --- MODAL FOR ADD/EDIT --- */}
+      {showModal && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '20px' }}>
+              
+              <div className="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+                <h5 className="modal-title fw-bold" style={{ color: themeColor }}>
+                  {editingId ? "✏️ Edit Employee" : "➕ Add New Employee"}
+                </h5>
+                <button type="button" className="btn-close" onClick={closeModal}></button>
+              </div>
+
+              <div className="modal-body px-4 py-3">
+                {message && <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} py-2`}>{message}</div>}
+                
+                <form onSubmit={handleSaveDoctor}>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-muted small mb-1">Full Name</label>
+                    <input type="text" className="form-control form-control-lg bg-light border-0" value={name} onChange={(e) => setName(e.target.value)} required />
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-muted small mb-1">Role / Specialty</label>
+                    <input type="text" className="form-control form-control-lg bg-light border-0" value={role} onChange={(e) => setRole(e.target.value)} required />
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-muted small mb-1">
+                      {editingId ? "Update Photo (Optional)" : "Upload Photo"}
+                    </label>
+                    <input type="file" accept="image/*" className="form-control form-control-lg bg-light border-0" onChange={(e) => setImageFile(e.target.files?.[0] || null)} required={!editingId} />
+                    {editingId && existingImageUrl && !imageFile && (
+                      <div className="mt-2 text-center">
+                        <small className="text-muted d-block mb-1">Current Photo:</small>
+                        <img src={existingImageUrl} alt="Current" style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '10px' }} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="form-label fw-bold text-muted small mb-1">Position Number (Ordering)</label>
+                    <input type="number" className="form-control form-control-lg bg-light border-0" value={position} onChange={(e) => setPosition(e.target.value)} required />
+                  </div>
+
+                  <button type="submit" className="btn btn-lg w-100 text-white fw-bold shadow-sm" style={{ backgroundColor: themeColor, borderRadius: '12px' }} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <><span className="spinner-border spinner-border-sm me-2"></span> Saving...</>
+                    ) : (
+                      editingId ? "Update Employee Details" : "Save New Employee"
+                    )}
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
