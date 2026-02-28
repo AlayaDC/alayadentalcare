@@ -1544,6 +1544,7 @@ const ServicesSection = ({ services, loading }: ServicesSectionProps) => (
                     fontSize: "0.88rem",
                     lineHeight: 1.75,
                     marginBottom: "1.5rem",
+                    overflowWrap: "break-word"
                   }}
                 >
                   {service.description}
