@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -13,6 +13,17 @@ export default function ManageAppointmentsPage() {
   const themeColor = '#086351';
   const supabase = createClient();
 
+  // ─── SAFE VERCEL API FETCH ───
+  const fetchAppointments = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/appointments');
+      const result = await response.json();
+      if (response.ok && result.data) setAppointments(result.data);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    }
+  }, []);
+
   useEffect(() => {
     const checkSession = async () => {
       // Note: Since you mentioned you access the admin panel via your laptop, 
@@ -24,23 +35,7 @@ export default function ManageAppointmentsPage() {
       if (session?.user) fetchAppointments();
     };
     checkSession();
-  }, [supabase.auth]);
-
-  // ─── SAFE VERCEL API FETCH ───
-  const fetchAppointments = async () => {
-    try {
-      const response = await fetch('/api/admin/appointments');
-      const result = await response.json();
-      
-      if (response.ok && result.data) {
-        setAppointments(result.data);
-      } else {
-        console.error("Failed to load appointments:", result.error);
-      }
-    } catch (error) {
-      console.error("Network error while fetching appointments:", error);
-    }
-  };
+  }, [supabase.auth, fetchAppointments]); // Added fetchAppointments here
 
   // ─── SAFE VERCEL API UPDATE ───
   const handleUpdateStatus = async (id: number, newStatus: string) => {
