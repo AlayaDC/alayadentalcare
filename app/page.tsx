@@ -96,7 +96,7 @@ const ABOUT_FEATURES = [
   },
 ];
 
-// ─── Custom Hooks (ALL ORIGINAL — untouched) ──────────────────────────────────
+// ─── Custom Hooks ─────────────────────────────────────────────────────────────
 const useScrollState = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeNavItem, setActiveNavItem] = useState<
@@ -163,7 +163,6 @@ const useSupabaseData = <T,>(table: string, limit: number) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // This line is the fix: it asks your Vercel server for the data, bypassing the ISP block
         const response = await fetch(`/api/supabase-data?table=${table}&limit=${limit}`);
         const result = await response.json();
 
@@ -189,7 +188,7 @@ const useSupabaseData = <T,>(table: string, limit: number) => {
   return { data, loading, error };
 };
 
-// ─── Main Component (ALL ORIGINAL — untouched) ───────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
   const { isScrolled, activeNavItem, setManualNav } = useScrollState();
   const { data: doctors, loading: doctorsLoading } =
@@ -276,7 +275,7 @@ export default function Home() {
   );
 }
 
-// ─── GlobalStyles — NEW Luxury Emerald Design System ─────────────────────────
+// ─── GlobalStyles ─────────────────────────────────────────────────────────────
 const GlobalStyles = ({
   themeColor,
   accentColor,
@@ -304,11 +303,7 @@ const GlobalStyles = ({
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
-   html, body {
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-
+    /* Fixed overflow on html to allow sticky navbar to work */
     html { 
       scroll-behavior: smooth; 
     }
@@ -318,8 +313,9 @@ const GlobalStyles = ({
       -webkit-font-smoothing: antialiased;
       background: #fff;
       color: #1A2E2A;
-      /* Optional: Prevents iOS text size adjustment on rotation */
       -webkit-text-size-adjust: 100%; 
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     h1, h2, h3, h4, h5, h6 {
@@ -351,6 +347,11 @@ const GlobalStyles = ({
     @keyframes pulse-glow {
       0%,100% { box-shadow: 0 0 0 0 rgba(8,99,81,0.35); }
       50%      { box-shadow: 0 0 0 10px rgba(8,99,81,0); }
+    }
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
     @keyframes shimmer-gold {
       0%   { background-position: -200% center; }
@@ -390,13 +391,15 @@ const GlobalStyles = ({
 
     /* ── Navbar ── */
     .navbar-luxury {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 1030 !important;
       background: rgba(250,247,242,0.96) !important;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      
       transition: all 0.35s ease;
       padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
     }
     .navbar-scrolled {
       background: rgba(255,255,255,0.98) !important;
@@ -404,7 +407,6 @@ const GlobalStyles = ({
     }
 
     .nav-link-luxury {
-      position: relative;
       font-family: 'Inter', sans-serif;
       font-size: 0.82rem;
       font-weight: 600;
@@ -414,18 +416,7 @@ const GlobalStyles = ({
       padding: 0.5rem 0.85rem !important;
       transition: color 0.3s ease;
     }
-    .nav-link-luxury::before {
-      content: '';
-      position: absolute;
-      bottom: 2px; left: 0.85rem; right: 0.85rem;
-      height: 1.5px;
-      background: linear-gradient(90deg, var(--gold), var(--accent));
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-    }
-    .nav-link-luxury:hover::before,
-    .nav-link-luxury.active::before { transform: scaleX(1); }
+    .nav-link-luxury:hover,
     .nav-link-luxury.active { color: var(--primary) !important; }
 
     /* ── Buttons ── */
@@ -797,24 +788,25 @@ const GlobalStyles = ({
     }
     .doctor-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #fff; margin: 0; }
     .doctor-role { font-size: 0.75rem; color: var(--accent); letter-spacing: 0.5px; }
-    .doctor-social { padding: 0.75rem 1rem; display: flex; gap: 0.5rem; border-top: 1px solid rgba(8,99,81,0.07); }
-    .doctor-social-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 2px;
-      background: rgba(8,99,81,0.06);
+    
+    .doctor-availability {
+      padding: 1rem 1.2rem;
+      border-top: 1px solid rgba(8,99,81,0.07);
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: var(--primary);
+      gap: 0.5rem;
       font-size: 0.82rem;
-      text-decoration: none;
-      transition: all 0.3s ease;
+      font-weight: 600;
+      color: var(--primary);
+      background: rgba(8,99,81,0.02);
     }
-    .doctor-social-btn:hover {
-      background: var(--primary);
-      color: #fff;
-      transform: translateY(-2px);
+    .availability-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
+      animation: pulse-green 2s infinite;
     }
 
     /* ── Testimonials ── */
@@ -1105,77 +1097,76 @@ const Navigation = ({
 
   return (
     <nav
-      className={`navbar navbar-expand-lg sticky-top navbar-luxury ${isScrolled ? "navbar-scrolled" : ""}`}
-      style={{ top: 0, zIndex: 1020 }}
+      className={`navbar navbar-expand-lg navbar-luxury ${isScrolled ? "navbar-scrolled" : ""}`}
     >
       <div className="container">
         {/* Brand */}
        <Link
-  className="navbar-brand d-flex align-items-center gap-3 text-decoration-none"
-  href="/#home"
->
-  {/* ── Logo with glow pulse effect ── */}
-  <div
-    style={{
-      position: "relative",
-      width: 52,
-      height: 52,
-      flexShrink: 0,
-    }}
-  >
-    {/* Animated glow ring behind logo */}
-    <div
-      style={{
-        position: "absolute",
-        inset: -1,
-        borderRadius: 10,
-        background: `linear-gradient(135deg, ${THEME_CONFIG.primary}, ${THEME_CONFIG.accent})`,
-        animation: "pulse-glow 3s ease-in-out infinite",
-        zIndex: 0,
-      }}
-    />
-    <img
-      src="/images/adc.png"
-      alt="Alaya Dental Care"
-      style={{
-        position: "relative",
-        zIndex: 1,
-        width: 52,
-        height: 52,
-        objectFit: "contain",
-        borderRadius: 8,
-        background: "#fff",
-        padding: 3,
-      }}
-    />
-  </div>
+          className="navbar-brand d-flex align-items-center gap-3 text-decoration-none"
+          href="/#home"
+        >
+          {/* ── Logo with glow pulse effect ── */}
+          <div
+            style={{
+              position: "relative",
+              width: 52,
+              height: 52,
+              flexShrink: 0,
+            }}
+          >
+            {/* Animated glow ring behind logo */}
+            <div
+              style={{
+                position: "absolute",
+                inset: -1,
+                borderRadius: 10,
+                background: `linear-gradient(135deg, ${THEME_CONFIG.primary}, ${THEME_CONFIG.accent})`,
+                animation: "pulse-glow 3s ease-in-out infinite",
+                zIndex: 0,
+              }}
+            />
+            <img
+              src="/images/adc.png"
+              alt="Alaya Dental Care"
+              style={{
+                position: "relative",
+                zIndex: 1,
+                width: 52,
+                height: 52,
+                objectFit: "contain",
+                borderRadius: 8,
+                background: "#fff",
+                padding: 3,
+              }}
+            />
+          </div>
 
-  {/* Brand text */}
-  <div>
-    <div
-      className="gradient-text"
-      style={{
-        fontFamily: "'Playfair Display', serif",
-        fontWeight: 700,
-        fontSize: "1.1rem",
-        lineHeight: 1.1,
-      }}
-    >
-      Alaya Dental Care
-    </div>
-    <div
-      style={{
-        fontSize: "0.62rem",
-        letterSpacing: "2px",
-        textTransform: "uppercase",
-        color: THEME_CONFIG.gold,
-        fontWeight: 600,
-      }}
-    >
-      Premium Dental Studio
-    </div>
-  </div>
-</Link>
+          {/* Brand text */}
+          <div>
+            <div
+              className="gradient-text"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 700,
+                fontSize: "1.1rem",
+                lineHeight: 1.1,
+              }}
+            >
+              Alaya Dental Care
+            </div>
+            <div
+              style={{
+                fontSize: "0.62rem",
+                letterSpacing: "2px",
+                textTransform: "uppercase",
+                color: THEME_CONFIG.gold,
+                fontWeight: 600,
+              }}
+            >
+              Premium Dental Studio
+            </div>
+          </div>
+        </Link>
 
 
         {/* Toggler */}
@@ -1645,17 +1636,10 @@ const DoctorsSection = ({ doctors, loading }: DoctorsSectionProps) => (
                     <div className="doctor-role">{doctor.role}</div>
                   </div>
                 </div>
-                <div className="doctor-social">
-                  {(["facebook", "linkedin", "envelope"] as const).map((icon) => (
-                    <a
-                      key={icon}
-                      href="#"
-                      className="doctor-social-btn"
-                      aria-label={icon}
-                    >
-                      <i className={`bi bi-${icon}`}></i>
-                    </a>
-                  ))}
+                {/* ── Replacement for social icons: "Available Today" ── */}
+                <div className="doctor-availability">
+                  <span className="availability-dot"></span>
+                  Available Today
                 </div>
               </div>
             </div>
@@ -1955,7 +1939,7 @@ const Footer = () => (
   </footer>
 );
 
-// ─── LoadingSpinner (original preserved) ─────────────────────────────────────
+// ─── LoadingSpinner ───────────────────────────────────────────────────────────
 const LoadingSpinner = ({ message }: { message: string }) => (
   <div className="col-12">
     <div className="loading-luxury">

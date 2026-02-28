@@ -132,21 +132,33 @@ export default function BookAppointment() {
   }, [formData.date, formData.location, formData.time]);
 
   // NEW: Send the ENTIRE booking to the unified Twilio+Supabase API route
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Send data to the unified API route we created in the previous step
-      // Make sure the path matches where you put that unified Twilio+Supabase code!
-      const response = await fetch("/api/send-whatsapp", {
+      // 1. Send to Database API
+      const dbResponse = await fetch("/api/admin/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
+      // BULLETPROOF CHECK: Read text first to prevent JSON crash
+      const responseText = await dbResponse.text();
+      if (!responseText) throw new Error("API returned an empty response.");
+      
+      const dbResult = JSON.parse(responseText);
 
-      if (response.ok && result.success) {
+      if (dbResponse.ok && dbResult.success) {
+        
+        // 2. Database successful! Send WhatsApp (Run silently in background)
+        fetch("/api/send-whatsapp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }).catch(err => console.log("WhatsApp message skipped/failed:", err));
+
+        // 3. Show Success Modal & Reset Form
         setShowModal(true);
         setFormData({
           name: "",
@@ -158,12 +170,13 @@ export default function BookAppointment() {
           time: "",
         });
         setStep(1);
+
       } else {
-        alert(result.error || "Oops! Something went wrong processing your booking.");
+        alert(dbResult.error || "Oops! Something went wrong saving your booking.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("Network error. Please try again.");
+      alert("System error. Check the terminal console for details.");
     } finally {
       setIsLoading(false);
     }

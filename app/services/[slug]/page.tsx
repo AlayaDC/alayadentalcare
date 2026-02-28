@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 const THEME = {
   primary: "#086351",
   accent: "#62B6B7",
@@ -12,7 +13,7 @@ const THEME = {
   cream: "#FAF7F2",
   dark: "#0D1F1C",
   charcoal: "#1A2E2A",
-};
+} as const;
 
 export default function DynamicServicePage() {
   const params = useParams();
@@ -24,10 +25,22 @@ export default function DynamicServicePage() {
   useEffect(() => {
     const fetchServiceDetails = async () => {
       try {
-        const response = await fetch(`/api/services/detail?slug=${slug}`);
+        // We will use your working supabase-data API that we know fetches correctly
+        const response = await fetch(`/api/supabase-data?table=services&limit=50`);
         const result = await response.json();
+        
         if (response.ok && result.data) {
-          setService(result.data);
+          
+          // 🔥 THE MAGIC FIX IS HERE 🔥
+          // We search through the array to find the ONE service that matches the URL slug
+          let actualServiceData;
+          if (Array.isArray(result.data)) {
+            actualServiceData = result.data.find((item: any) => item.slug === slug);
+          } else {
+            actualServiceData = result.data;
+          }
+
+          setService(actualServiceData);
         }
       } catch (error) {
         console.error("Error fetching service:", error);
@@ -38,121 +51,449 @@ export default function DynamicServicePage() {
     if (slug) fetchServiceDetails();
   }, [slug]);
 
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center vh-100" style={{ background: THEME.dark }}>
-      <div className="spinner-border" style={{ color: THEME.accent }}></div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="vh-100 d-flex flex-column justify-content-center align-items-center" style={{ background: THEME.cream }}>
+        <DetailStyles />
+        <div className="loading-ring" />
+        <p className="mt-3" style={{ color: THEME.primary, fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase", fontSize: "0.8rem" }}>
+          Loading Treatment Details...
+        </p>
+      </div>
+    );
+  }
 
-  if (!service) return (
-    <div className="vh-100 d-flex flex-column align-items-center justify-content-center text-center" style={{ background: THEME.dark, color: THEME.cream }}>
-      <h1 className="display-1 fw-bold" style={{ color: THEME.gold }}>404</h1>
-      <p className="text-white-50">Service details could not be found.</p>
-      <Link href="/" className="book-btn-outline mt-3 text-decoration-none">Return Home</Link>
-    </div>
-  );
+  if (!service) {
+    return (
+      <div className="vh-100 d-flex flex-column align-items-center justify-content-center text-center" style={{ background: THEME.dark, color: THEME.cream }}>
+        <DetailStyles />
+        <div className="service-icon-wrap-large mb-4">
+          <i className="bi bi-exclamation-triangle" style={{ color: THEME.gold }}></i>
+        </div>
+        <h1 className="font-serif fw-bold mb-3" style={{ fontSize: "3rem" }}>Treatment Not Found</h1>
+        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "2rem" }}>We couldn't locate the details for this specific service.</p>
+        <Link href="/services" className="btn-luxury-primary">
+          <span>Return to Services</span>
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <main className="book-page min-vh-100 pb-5" style={{ background: THEME.dark, overflowX: "hidden" }}>
+    <main className="service-detail-page" style={{ background: THEME.cream, minHeight: "100vh" }}>
       <DetailStyles />
       
-      {/* ── Top Nav ── */}
-      <nav className="book-topnav">
-        <div className="container d-flex align-items-center justify-content-between py-3">
-          <Link href="/" className="d-flex align-items-center gap-3 text-decoration-none">
-            <div className="book-logo-wrap">
-              <div className="book-logo-glow" />
-              <div style={{ position: "relative", zIndex: 1, margin: 3 }}>
-                <Image src="/images/adc.png" alt="Alaya" width={44} height={44} style={{ borderRadius: 7, background: "#fff", padding: 2, objectFit: "contain" }} />
-              </div>
+      {/* ── Top Navigation ── */}
+      <nav className="detail-navbar sticky-top">
+        <div className="container d-flex align-items-center justify-content-between py-2">
+          <Link href="/#home" className="d-flex align-items-center gap-3 text-decoration-none">
+            <div style={{ position: "relative", width: 44, height: 44 }}>
+              <div className="logo-glow" />
+              <img src="/images/adc.png" alt="Alaya Dental" style={{ position: "relative", zIndex: 1, width: "100%", height: "100%", objectFit: "contain", borderRadius: 8, background: "#fff", padding: 2 }} />
             </div>
             <div className="d-none d-sm-block">
-              <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: "1rem", color: THEME.cream, lineHeight: 1.1 }}>Alaya Dental Care</div>
-              <div style={{ fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase", color: THEME.gold }}>Premium Dental Studio</div>
+              <div className="font-serif gradient-text fw-bold" style={{ fontSize: "1.1rem", lineHeight: 1.1 }}>Alaya Dental Care</div>
+              <div style={{ fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase", color: THEME.gold, fontWeight: 600 }}>Premium Dental Studio</div>
             </div>
           </Link>
-          <Link href="/services" className="book-back-btn"><i className="bi bi-arrow-left me-2"></i> All Services</Link>
+          <Link href="/services" className="btn-back">
+            <i className="bi bi-arrow-left me-2"></i> All Services
+          </Link>
         </div>
       </nav>
 
-      {/* ── Background ── */}
-      <div className="book-grid-bg" />
-      <div className="book-glow book-glow-1" />
-
-      <div className="container position-relative py-5" style={{ zIndex: 1 }}>
-        <div className="row justify-content-center">
-          <div className="col-lg-10">
-            
-            {/* ── Header ── */}
-            <div className="text-center mb-5">
-              <div className="service-icon-circle mb-4" style={{ backgroundColor: `${service.color || THEME.gold}20` }}>
-                 <i className={`bi ${service.icon || 'bi-stars'}`} style={{ color: service.color || THEME.gold }}></i>
+      {/* ── Hero Banner ── */}
+      <section className="service-hero">
+        <div className="hero-bg-pattern" />
+        <div className="container position-relative py-5" style={{ zIndex: 2 }}>
+          <div className="row align-items-center">
+            <div className="col-lg-8">
+              <div className="d-flex align-items-center gap-3 mb-4">
+                <div className="service-icon-wrap-large">
+                  <i className={`bi ${service.icon || 'bi-stars'}`}></i>
+                </div>
+                <div className="badge-luxury">Premium Treatment</div>
               </div>
-              <h1 className="detail-title">{service.title}</h1>
-              <div className="detail-underline mx-auto"></div>
+              <h1 className="hero-title">{service.title}</h1>
+              <div className="hero-divider"></div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="detail-card">
-              <div className="p-4 p-md-5">
-                <p className="detail-text">
-                  {service.full_description || service.description}
-                </p>
+      {/* ── Main Content Area ── */}
+      <section className="py-5">
+        <div className="container">
+          <div className="row g-5">
+            
+            {/* Left Column: Content Flow */}
+            <div className="col-lg-8">
+              
+              {/* 1. Short Description */}
+              {service.description && (
+                <div className="content-card mb-5">
+                  <h3 className="font-serif mb-4" style={{ color: THEME.charcoal, fontSize: "1.8rem" }}>About This Treatment</h3>
+                  <div className="service-description format-long-text">
+                    {service.description}
+                  </div>
+                </div>
+              )}
 
-                {/* Gallery */}
-                {(service.image1 || service.image2 || service.image3) && (
-                  <div className="mt-5">
-                    <h4 className="gallery-title mb-4">Treatment Gallery</h4>
-                    <div className="row g-4">
-                      {[service.image1, service.image2, service.image3].filter(Boolean).map((img, i) => (
-                        <div key={i} className="col-md-4">
-                          <div className="gallery-img-wrap">
-                            <img src={img} alt="Clinical view" className="img-fluid" />
+              {/* 2. Gallery Section */}
+              {(service.image1 || service.image2 || service.image3) && (
+                <div className="gallery-section mb-5">
+                  <div className="d-flex align-items-center gap-3 mb-4">
+                    <h3 className="font-serif m-0" style={{ color: THEME.charcoal, fontSize: "1.8rem" }}>Treatment Images</h3>
+                    <div style={{ height: 1, background: "rgba(8,99,81,0.1)", flexGrow: 1 }} />
+                  </div>
+                  
+                  <div className="row g-4">
+                    {[service.image1, service.image2, service.image3].filter(Boolean).map((img, i) => (
+                      <div key={i} className="col-md-4 col-sm-6">
+                        <div className="gallery-image-wrap">
+                          <img src={img} alt={`${service.title} view ${i + 1}`} />
+                          <div className="gallery-overlay">
+                            <i className="bi bi-zoom-in text-white fs-4"></i>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Full Detailed Explanation */}
+              {service.full_description && (
+                <div className="content-card mb-5">
+                  <h3 className="font-serif mb-4" style={{ color: THEME.charcoal, fontSize: "1.8rem" }}>Detailed Explanation</h3>
+                  <div className="service-full-description format-long-text">
+                    {service.full_description}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Right Column: Sticky Booking Card */}
+            <div className="col-lg-4">
+              <div className="sticky-booking-card">
+                <div className="card-header text-center">
+                  <h4 className="font-serif text-white m-0" style={{ fontSize: "1.3rem" }}>Ready to transform your smile?</h4>
+                </div>
+                <div className="card-body">
+                  
+                  <div className="quick-facts mb-4">
+                    <div className="fact-item">
+                      <i className="bi bi-clock text-accent"></i>
+                      <div>
+                        <div className="fact-label">Est. Duration</div>
+                        <div className="fact-value">Consultation Required</div>
+                      </div>
+                    </div>
+                    <div className="fact-item">
+                      <i className="bi bi-shield-check text-accent"></i>
+                      <div>
+                        <div className="fact-label">Safety</div>
+                        <div className="fact-value">100% Sterilized</div>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <div className="text-center mt-5">
-                   <Link href="/book" className="book-btn-primary text-decoration-none">
-                     <i className="bi bi-calendar-check me-2"></i> Book This Treatment
-                   </Link>
+                  <p className="text-center mb-4" style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)" }}>
+                    Schedule a consultation with our expert team to discuss if {service.title} is right for you.
+                  </p>
+                  
+                  <Link href="/book" className="btn-luxury-primary w-100 justify-content-center">
+                    <span>
+                      <i className="bi bi-calendar-check me-2"></i> Book Appointment
+                    </span>
+                  </Link>
+
+                  <div className="text-center mt-3">
+                    <a href="tel:+918848659365" className="text-decoration-none" style={{ fontSize: "0.8rem", color: THEME.gold, fontWeight: 600 }}>
+                      <i className="bi bi-telephone-fill me-1"></i> Or call +91 8848659365
+                    </a>
+                  </div>
+
                 </div>
               </div>
             </div>
 
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const DetailStyles = () => (
   <style dangerouslySetInnerHTML={{ __html: `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* Utilities */
+    .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+    .text-accent { color: ${THEME.accent}; }
+    .gradient-text {
+      background: linear-gradient(135deg, ${THEME.primary} 0%, ${THEME.accent} 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Fix for long unbroken text overflowing the container */
+    .format-long-text {
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    /* Animations */
+    @keyframes pulse-glow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(8,99,81,0.35); }
+      50%      { box-shadow: 0 0 0 10px rgba(8,99,81,0); }
+    }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* Navbar */
+    .detail-navbar {
+      background: rgba(250,247,242,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(8,99,81,0.05);
+      box-shadow: 0 4px 30px rgba(8,99,81,0.05);
+    }
+    .logo-glow {
+      position: absolute;
+      inset: -1px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, ${THEME.primary}, ${THEME.accent});
+      animation: pulse-glow 3s ease-in-out infinite;
+      z-index: 0;
+    }
+    .btn-back {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: ${THEME.charcoal};
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      border: 1px solid rgba(8,99,81,0.1);
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: ${THEME.primary};
+      color: #fff;
+      border-color: ${THEME.primary};
+    }
+
+    /* Hero Section */
+    .service-hero {
+      background: ${THEME.dark};
+      position: relative;
+      overflow: hidden;
+      padding: 4rem 0 3rem;
+      border-bottom: 4px solid ${THEME.gold};
+    }
+    .hero-bg-pattern {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(98,182,183,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(98,182,183,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.5;
+    }
+    .service-hero::after {
+      content: '';
+      position: absolute;
+      top: -150px; right: -150px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(98,182,183,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+    .service-icon-wrap-large {
+      width: 70px;
+      height: 70px;
+      border-radius: 2px;
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: ${THEME.gold};
+    }
+    .badge-luxury {
+      border: 1px solid ${THEME.accent};
+      color: ${THEME.accent};
+      padding: 0.35rem 1rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.1;
+      margin: 0;
+    }
+    .hero-divider {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, ${THEME.gold}, ${THEME.accent});
+      margin-top: 1.5rem;
+    }
+
+    /* Content Area */
+    .content-card {
+      background: #fff;
+      padding: 3rem;
+      border-radius: 4px;
+      box-shadow: 0 10px 40px rgba(8,99,81,0.05);
+      border: 1px solid rgba(8,99,81,0.05);
+    }
+    .service-description {
+      color: #4A5553;
+      font-size: 1.05rem;
+      line-height: 1.9;
+    }
+    /* Drop-cap for the short description */
+    .service-description::first-letter {
+      color: ${THEME.primary};
+      float: left;
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      line-height: 0.8;
+      padding-top: 4px;
+      padding-right: 8px;
+      padding-left: 3px;
+    }
     
-    .book-grid-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: linear-gradient(rgba(98,182,183,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(98,182,183,0.04) 1px, transparent 1px); background-size: 60px 60px; }
-    .book-glow-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(8,99,81,0.20) 0%, transparent 70%); position: fixed; top: -150px; left: -150px; filter: blur(90px); }
-    .book-topnav { position: sticky; top: 0; z-index: 100; background: rgba(13,31,28,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(201,168,76,0.10); }
-    .book-logo-glow { position: absolute; inset: -3px; border-radius: 11px; background: linear-gradient(135deg, #086351, #62B6B7); }
-    .book-back-btn { display: inline-flex; align-items: center; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.5); text-decoration: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.4rem 1rem; }
+    .service-full-description {
+      color: #4A5553;
+      font-size: 1rem;
+      line-height: 2;
+    }
 
-    .service-icon-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto; border: 1px solid rgba(255,255,255,0.05); }
-    .detail-title { font-family: 'Playfair Display', serif; color: #FAF7F2; font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; }
-    .detail-underline { width: 80px; height: 4px; background: #C9A84C; border-radius: 2px; }
-    
-    .detail-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(98,182,183,0.1); border-radius: 30px; backdrop-filter: blur(10px); }
-    .detail-text { color: rgba(255,255,255,0.7); font-size: 1.15rem; line-height: 1.9; white-space: pre-line; text-align: center; }
+    /* Gallery */
+    .gallery-image-wrap {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      cursor: pointer;
+    }
+    .gallery-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(13,31,28,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .gallery-image-wrap:hover img { transform: scale(1.08); }
+    .gallery-image-wrap:hover .gallery-overlay { opacity: 1; }
 
-    .gallery-title { font-family: 'Playfair Display', serif; color: #FAF7F2; text-align: center; font-size: 1.5rem; }
-    .gallery-img-wrap { border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); height: 250px; }
-    .gallery-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-    .gallery-img-wrap:hover img { transform: scale(1.05); }
+    /* Sticky Booking Card */
+    .sticky-booking-card {
+      position: sticky;
+      top: 100px;
+      background: ${THEME.charcoal};
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(13,31,28,0.15);
+      border: 1px solid rgba(201,168,76,0.15);
+    }
+    .sticky-booking-card .card-header {
+      background: ${THEME.dark};
+      padding: 1.5rem;
+      border-bottom: 2px solid ${THEME.gold};
+    }
+    .sticky-booking-card .card-body {
+      padding: 2rem 1.5rem;
+    }
+    .quick-facts {
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+      padding: 1.25rem;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .fact-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .fact-item:last-child { margin-bottom: 0; }
+    .fact-item i { font-size: 1.5rem; }
+    .fact-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.4); }
+    .fact-value { font-size: 0.95rem; font-weight: 600; color: #fff; }
 
-    .book-btn-primary { background: linear-gradient(135deg, #086351, #62B6B7); color: #fff; border: none; border-radius: 8px; padding: 1rem 2.5rem; font-weight: 700; transition: 0.3s; display: inline-block; }
-    .book-btn-primary:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(8,99,81,0.3); color: white; }
-    .book-btn-outline { color: #C9A84C; border: 1px solid #C9A84C; padding: 0.5rem 1.5rem; border-radius: 50px; }
+    /* Buttons */
+    .btn-luxury-primary {
+      background: ${THEME.dark};
+      color: ${THEME.cream};
+      border: 1.5px solid ${THEME.dark};
+      border-radius: 4px;
+      padding: 0.9rem 2rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.35s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-luxury-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, ${THEME.primary}, ${THEME.accent});
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .btn-luxury-primary:hover::before { opacity: 1; }
+    .btn-luxury-primary:hover { color: #fff; border-color: transparent; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(8,99,81,0.2); }
+    .btn-luxury-primary span, .btn-luxury-primary i { position: relative; z-index: 1; }
+
+    /* Loading state */
+    .loading-ring {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(8,99,81,0.1);
+      border-top-color: ${THEME.primary};
+      animation: spin-slow 0.9s linear infinite;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+      .content-card { padding: 2rem 1.5rem; }
+      .service-description::first-letter { font-size: 2.8rem; }
+      .sticky-booking-card { position: relative; top: 0; margin-top: 2rem; }
+    }
   ` }} />
 );

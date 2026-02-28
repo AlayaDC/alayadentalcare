@@ -11,20 +11,30 @@ const getAdminSupabase = () => {
 
 // ─── READ SERVICES (GET) ───
 export async function GET(request: Request) {
-  const supabase = getAdminSupabase();
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
   try {
-    if (id) {
-      const { data, error } = await supabase.from('services').select('*').eq('id', id).single();
-      if (error) throw error;
-      return NextResponse.json({ data });
-    } else {
-      const { data, error } = await supabase.from('services').select('*').order('position', { ascending: true });
-      if (error) throw error;
-      return NextResponse.json({ data });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 1. Get the slug that the user clicked on (e.g., "root-canal")
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get('slug');
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
     }
+
+    // 2. 🔥 THE FIX: Tell Supabase to ONLY get the row where the slug matches!
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('slug', slug)  // <--- This line stops it from always showing Teeth Whitening!
+      .single();         // <--- This tells it to only return ONE item, not a list.
+
+    if (error) throw error;
+
+    return NextResponse.json({ data });
+    
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -39,38 +49,46 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.from('services').insert([{
       title: body.title,
       description: body.description,
+      full_description: body.full_description, // Now saving the full details!
       icon: body.icon,
       color: body.color,
       slug: body.slug,
-      position: parseInt(body.position) || 0
+      position: parseInt(body.position) || 0,
+      image1: body.image1, // Now saving images!
+      image2: body.image2,
+      image3: body.image3
     }]).select();
 
     if (error) throw error;
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error("ADD ERROR:", error); // Check your VS Code Terminal if this fails!
+    console.error("ADD ERROR:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// ─── EDIT SERVICE (PUT) ───
-export async function PUT(request: Request) {
+// ─── EDIT SERVICE (PATCH) ───
+// Changed from PUT to PATCH to match your Admin Panel frontend code!
+export async function PATCH(request: Request) {
   const supabase = getAdminSupabase();
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
-  if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
-
+  
   try {
     const body = await request.json();
+    const id = body.id; // The frontend sends ID inside the body for PATCH requests
+
+    if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
     
     const { data, error } = await supabase.from('services').update({
       title: body.title,
       description: body.description,
+      full_description: body.full_description, // Now updating full details!
       icon: body.icon,
       color: body.color,
       slug: body.slug,
-      position: parseInt(body.position) || 0
+      position: parseInt(body.position) || 0,
+      image1: body.image1, // Now updating images!
+      image2: body.image2,
+      image3: body.image3
     }).eq('id', id).select();
 
     if (error) throw error;
