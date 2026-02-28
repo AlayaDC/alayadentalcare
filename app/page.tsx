@@ -264,13 +264,18 @@ export default function Home() {
         onMouseLeave={handleMouseLeave}
         setManualNav={setManualNav}
       />
-      <HeroSection />
-      <AboutSection />
-      <ServicesSection services={services} loading={servicesLoading} />
-      <DoctorsSection doctors={doctors} loading={doctorsLoading} />
-      <TestimonialsSection />
-      <CTASection />
-      <Footer />
+      
+      {/* 🚀 THE FIX: This wrapper forces all sections to stay strictly within the screen width, 
+          cutting off the white gap, without breaking the sticky navbar above it! */}
+      <div style={{ overflowX: "hidden", width: "100%" }}>
+        <HeroSection />
+        <AboutSection />
+        <ServicesSection services={services} loading={servicesLoading} />
+        <DoctorsSection doctors={doctors} loading={doctorsLoading} />
+        <TestimonialsSection />
+        <CTASection />
+        <Footer />
+      </div>
     </main>
   );
 }
