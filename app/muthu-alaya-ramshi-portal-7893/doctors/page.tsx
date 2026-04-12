@@ -30,10 +30,15 @@ export default function ManageDoctorsPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setAuthLoading(false);
-      if (session?.user) fetchDoctors(); 
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+        if (session?.user) fetchDoctors();
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      } finally {
+        setAuthLoading(false);
+      }
     };
     checkSession();
   }, [supabase.auth]);
@@ -44,8 +49,14 @@ export default function ManageDoctorsPage() {
   };
 
   const uploadImageToSupabase = async (file: File) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+    if (file.size > MAX_SIZE) throw new Error('File too large (max 5MB)');
+    if (!ALLOWED_TYPES.includes(file.type)) throw new Error('Only JPEG, PNG, WebP, and GIF images are allowed');
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const { error: uploadError } = await supabase.storage.from('doctor-images').upload(fileName, file);
     if (uploadError) throw uploadError;
     const { data } = supabase.storage.from('doctor-images').getPublicUrl(fileName);
@@ -58,20 +69,18 @@ export default function ManageDoctorsPage() {
     setMessage("");
 
     try {
-      let finalImageUrl = existingImageUrl;
+      let finalImageUrl = existingImageUrl || null;
 
       if (imageFile) {
         finalImageUrl = await uploadImageToSupabase(imageFile);
-      } else if (!existingImageUrl) {
-        throw new Error("Please select an image.");
       }
 
       if (editingId) {
-        const { error } = await supabase.from('doctors').update({ name, role, image: finalImageUrl, position: parseInt(position) }).eq('id', editingId);
+        const { error } = await supabase.from('doctors').update({ name, role, image: finalImageUrl, position: parseInt(position) || 0 }).eq('id', editingId);
         if (error) throw error;
         alert("✅ Doctor updated successfully!");
       } else {
-        const { error } = await supabase.from('doctors').insert([{ name, role, image: finalImageUrl, position: parseInt(position) }]);
+        const { error } = await supabase.from('doctors').insert([{ name, role, image: finalImageUrl, position: parseInt(position) || 0 }]);
         if (error) throw error;
         alert("✅ Doctor added successfully!");
       }
@@ -174,7 +183,13 @@ export default function ManageDoctorsPage() {
                     <tr key={doc.id}>
                       <td className="px-4 fw-bold text-muted">{doc.position}</td>
                       <td>
-                        <img src={doc.image} alt={doc.name} style={{ width: '45px', height: '45px', objectFit: 'cover', borderRadius: '50%' }} />
+                        {doc.image ? (
+                          <img src={doc.image} alt={doc.name} style={{ width: '45px', height: '45px', objectFit: 'cover', borderRadius: '50%' }} />
+                        ) : (
+                          <div style={{ width: '45px', height: '45px', borderRadius: '50%', background: '#086351', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
+                            {doc.name.replace('Dr. ', '').split(' ').map((n: string) => n[0]).join('')}
+                          </div>
+                        )}
                       </td>
                       <td className="fw-semibold">{doc.name}</td>
                       <td>{doc.role}</td>
@@ -198,7 +213,13 @@ export default function ManageDoctorsPage() {
             doctorsList.map((doc) => (
               <div key={doc.id} className="card border-0 shadow-sm mb-3" style={{ borderRadius: '15px' }}>
                 <div className="card-body d-flex align-items-center">
-                  <img src={doc.image} alt={doc.name} className="me-3" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '50%' }} />
+                  {doc.image ? (
+                    <img src={doc.image} alt={doc.name} className="me-3" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    <div className="me-3" style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#086351', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', flexShrink: 0 }}>
+                      {doc.name.replace('Dr. ', '').split(' ').map((n: string) => n[0]).join('')}
+                    </div>
+                  )}
                   <div className="flex-grow-1">
                     <h6 className="fw-bold mb-1">{doc.name}</h6>
                     <p className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>{doc.role}</p>
@@ -247,7 +268,7 @@ export default function ManageDoctorsPage() {
                     <label className="form-label fw-bold text-muted small mb-1">
                       {editingId ? "Update Photo (Optional)" : "Upload Photo"}
                     </label>
-                    <input type="file" accept="image/*" className="form-control form-control-lg bg-light border-0" onChange={(e) => setImageFile(e.target.files?.[0] || null)} required={!editingId} />
+                    <input type="file" accept="image/*" className="form-control form-control-lg bg-light border-0" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
                     {editingId && existingImageUrl && !imageFile && (
                       <div className="mt-2 text-center">
                         <small className="text-muted d-block mb-1">Current Photo:</small>

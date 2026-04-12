@@ -19,19 +19,26 @@ export default function ManageAppointmentsPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [appointments, setAppointments] = useState<any[]>([]);
-  
+
   // ─── NEW UI STATES ───
   const [activeTab, setActiveTab] = useState<"active" | "previous">("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [pastDateFilter, setPastDateFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [liveAlert, setLiveAlert] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
-  
+
   // ─── NEW APPOINTMENT FORM STATE ───
   const [newApptForm, setNewApptForm] = useState({
     name: "", phone: "", location: "chettiyamkinar", service: "General Consultation", date: "", time: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ─── PATIENT AUTO-FILL STATE ───
+  const [patientSearchResults, setPatientSearchResults] = useState<any[]>([]);
+  const [patientSearchLoading, setPatientSearchLoading] = useState(false);
+  const [isExistingPatient, setIsExistingPatient] = useState<boolean | null>(null);
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const patientSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const supabase = createClient();
   const seenIdsRef = useRef<Set<any>>(new Set());
@@ -48,14 +55,14 @@ export default function ManageAppointmentsPage() {
 
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      
+
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(900, audioCtx.currentTime); 
-      oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.4); 
-      
-      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); 
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); 
-      
+      oscillator.frequency.setValueAtTime(900, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.4);
+
+      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
       oscillator.start();
@@ -86,12 +93,68 @@ export default function ManageAppointmentsPage() {
     };
   }, []);
 
+  // ─── PATIENT PHONE SEARCH ───
+  const searchPatientByPhone = useCallback(async (phone: string) => {
+    if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+      setPatientSearchResults([]);
+      setIsExistingPatient(null);
+      setShowPatientDropdown(false);
+      return;
+    }
+    setPatientSearchLoading(true);
+    try {
+      const response = await fetch(`/api/admin/patients?phone=${encodeURIComponent(phone)}`);
+      const result = await response.json();
+      if (response.ok && result.data && result.data.length > 0) {
+        setPatientSearchResults(result.data);
+        setIsExistingPatient(true);
+        setShowPatientDropdown(true);
+      } else {
+        setPatientSearchResults([]);
+        setIsExistingPatient(false);
+        setShowPatientDropdown(false);
+      }
+    } catch (error) {
+      console.error("Error searching patients:", error);
+      setPatientSearchResults([]);
+      setIsExistingPatient(false);
+      setShowPatientDropdown(false);
+    } finally {
+      setPatientSearchLoading(false);
+    }
+  }, []);
+
+  const handlePhoneChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+    setNewApptForm(prev => ({ ...prev, phone: digitsOnly }));
+    setIsExistingPatient(null);
+    setShowPatientDropdown(false);
+
+    if (patientSearchTimerRef.current) {
+      clearTimeout(patientSearchTimerRef.current);
+    }
+
+    if (digitsOnly.length === 10) {
+      patientSearchTimerRef.current = setTimeout(() => {
+        searchPatientByPhone(digitsOnly);
+      }, 300);
+    } else {
+      setPatientSearchResults([]);
+    }
+  };
+
+  const handleSelectPatient = (patient: any) => {
+    setNewApptForm(prev => ({ ...prev, name: patient.name }));
+    setShowPatientDropdown(false);
+    setIsExistingPatient(true);
+  };
+
   // ─── FETCH LOGIC ───
   const fetchAppointments = useCallback(async (shouldAlert = false) => {
     try {
       const response = await fetch('/api/admin/appointments');
       const result = await response.json();
-      
+
       if (response.ok && result.data) {
         const newAppointments = result.data;
         setAppointments(newAppointments);
@@ -104,7 +167,7 @@ export default function ManageAppointmentsPage() {
           if (newIds.length > 0) {
             const newApps = newAppointments.filter((app: any) => newIds.includes(app.id));
             const names = newApps.map((app: any) => app.name).join(', ');
-            
+
             // Start continuous ringing
             startRinging();
             setLiveAlert({ show: true, message: `New booking received from: ${names}` });
@@ -123,12 +186,17 @@ export default function ManageAppointmentsPage() {
   // ─── INITIALIZATION & POLLING ───
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setAuthLoading(false);
-      if (session?.user) {
-        await fetchAppointments(false);
-        initialFetchDoneRef.current = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+        if (session?.user) {
+          await fetchAppointments(false);
+          initialFetchDoneRef.current = true;
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      } finally {
+        setAuthLoading(false);
       }
     };
     checkSession();
@@ -136,7 +204,7 @@ export default function ManageAppointmentsPage() {
 
   useEffect(() => {
     if (!user) return;
-    const intervalId = setInterval(() => fetchAppointments(true), 15000); 
+    const intervalId = setInterval(() => fetchAppointments(true), 15000);
     return () => clearInterval(intervalId);
   }, [user, fetchAppointments]);
 
@@ -166,6 +234,9 @@ export default function ManageAppointmentsPage() {
       if (response.ok) {
         setShowAddModal(false);
         setNewApptForm({ name: "", phone: "", location: "chettiyamkinar", service: "General Consultation", date: "", time: "" });
+        setPatientSearchResults([]);
+        setIsExistingPatient(null);
+        setShowPatientDropdown(false);
         fetchAppointments(false); // Refresh list
       } else {
         alert("Failed to save appointment.");
@@ -182,8 +253,8 @@ export default function ManageAppointmentsPage() {
 
   const filteredAppointments = useMemo(() => {
     // 1. Apply global text search
-    let filtered = appointments.filter(app => 
-      app.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    let filtered = appointments.filter(app =>
+      app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (app.phone && app.phone.includes(searchTerm))
     );
 
@@ -202,8 +273,37 @@ export default function ManageAppointmentsPage() {
 
   const getStatusBadge = (status: string) => {
     if (status === 'Confirmed') return <span className="badge bg-success px-3 py-2">Confirmed</span>;
+    if (status === 'Check-in') return <span className="badge bg-info text-white px-3 py-2">Check-in</span>;
+    if (status === 'Completed') return <span className="badge bg-primary px-3 py-2">Completed</span>;
     if (status === 'Cancelled') return <span className="badge bg-danger px-3 py-2">Cancelled</span>;
     return <span className="badge bg-warning text-dark px-3 py-2">Pending</span>;
+  };
+
+  const renderActionButtons = (app: any) => {
+    switch (app.status) {
+      case 'Pending':
+        return (
+          <>
+            <button onClick={() => handleUpdateStatus(app.id, 'Confirmed')} className="btn btn-sm btn-outline-success me-2 fw-bold">Confirm</button>
+            <button onClick={() => handleUpdateStatus(app.id, 'Cancelled')} className="btn btn-sm btn-outline-danger fw-bold">Cancel</button>
+          </>
+        );
+      case 'Confirmed':
+        return (
+          <>
+            <button onClick={() => handleUpdateStatus(app.id, 'Check-in')} className="btn btn-sm btn-outline-info me-2 fw-bold">Check-in</button>
+            <button onClick={() => handleUpdateStatus(app.id, 'Cancelled')} className="btn btn-sm btn-outline-danger fw-bold">Cancel</button>
+          </>
+        );
+      case 'Check-in':
+        return (
+          <button onClick={() => handleUpdateStatus(app.id, 'Completed')} className="btn btn-sm btn-outline-primary fw-bold">Complete</button>
+        );
+      case 'Completed':
+      case 'Cancelled':
+      default:
+        return null;
+    }
   };
 
   // ─── RENDER CONDITIONS ───
@@ -212,7 +312,7 @@ export default function ManageAppointmentsPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa', position: 'relative' }}>
-      
+
       <AdminStyles theme={THEME} />
 
       {/* ─── CONTINUOUS ALARM TOAST ─── */}
@@ -239,17 +339,55 @@ export default function ManageAppointmentsPage() {
           <div className="bg-white p-4" style={{ borderRadius: '16px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h4 className="fw-bold m-0" style={{ color: THEME.primary }}>Add New Appointment</h4>
-              <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+              <button type="button" className="btn-close" onClick={() => { setShowAddModal(false); setPatientSearchResults([]); setIsExistingPatient(null); setShowPatientDropdown(false); }}></button>
             </div>
             <form onSubmit={handleManualAdd}>
               <div className="row g-3">
                 <div className="col-md-6">
-                  <label className="fw-bold small">Patient Name</label>
-                  <input type="text" className="form-control" required value={newApptForm.name} onChange={e => setNewApptForm({...newApptForm, name: e.target.value})} />
+                  <label className="fw-bold small">Phone (10 digits)</label>
+                  <div className="position-relative">
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="Enter 10-digit phone"
+                      value={newApptForm.phone}
+                      onChange={e => handlePhoneChange(e.target.value)}
+                    />
+                    {patientSearchLoading && (
+                      <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+                        <div className="spinner-border spinner-border-sm text-muted" role="status">
+                          <span className="visually-hidden">Searching...</span>
+                        </div>
+                      </div>
+                    )}
+                    {showPatientDropdown && patientSearchResults.length > 0 && (
+                      <div className="position-absolute w-100 bg-white border rounded shadow-sm mt-1" style={{ zIndex: 1060, maxHeight: '150px', overflowY: 'auto' }}>
+                        {patientSearchResults.map((patient: any, index: number) => (
+                          <button
+                            key={patient.id || index}
+                            type="button"
+                            className="btn btn-light w-100 text-start px-3 py-2 border-0 border-bottom"
+                            onClick={() => handleSelectPatient(patient)}
+                          >
+                            <i className="bi bi-person-fill me-2 text-success"></i>
+                            <span className="fw-semibold">{patient.name}</span>
+                            {patient.phone && <span className="text-muted ms-2 small">{patient.phone}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {isExistingPatient === true && (
+                    <span className="badge bg-success bg-opacity-10 text-success mt-1"><i className="bi bi-check-circle me-1"></i>Existing Patient</span>
+                  )}
+                  {isExistingPatient === false && newApptForm.phone.length === 10 && (
+                    <span className="badge bg-info bg-opacity-10 text-info mt-1"><i className="bi bi-person-plus me-1"></i>New Patient</span>
+                  )}
                 </div>
                 <div className="col-md-6">
-                  <label className="fw-bold small">Phone (10 digits)</label>
-                  <input type="text" className="form-control" required value={newApptForm.phone} onChange={e => setNewApptForm({...newApptForm, phone: e.target.value})} />
+                  <label className="fw-bold small">Patient Name</label>
+                  <input type="text" className="form-control" required value={newApptForm.name} onChange={e => { setNewApptForm({...newApptForm, name: e.target.value}); if (isExistingPatient === true && !patientSearchResults.some((p: any) => p.name === e.target.value)) { setIsExistingPatient(false); } }} />
                 </div>
                 <div className="col-md-6">
                   <label className="fw-bold small">Clinic</label>
@@ -278,7 +416,7 @@ export default function ManageAppointmentsPage() {
                 </div>
               </div>
               <div className="mt-4 text-end">
-                <button type="button" className="btn btn-light me-2" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-light me-2" onClick={() => { setShowAddModal(false); setPatientSearchResults([]); setIsExistingPatient(null); setShowPatientDropdown(false); }}>Cancel</button>
                 <button type="submit" className="btn text-white fw-bold" style={{ background: THEME.primary }} disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : "Save Appointment"}
                 </button>
@@ -298,7 +436,7 @@ export default function ManageAppointmentsPage() {
 
       {/* ─── MAIN DASHBOARD ─── */}
       <div className="container py-5">
-        
+
         {/* Controls Header */}
         <div className="row align-items-center mb-4 g-3">
           <div className="col-md-4">
@@ -312,9 +450,9 @@ export default function ManageAppointmentsPage() {
           <div className="col-md-8 text-md-end d-flex justify-content-md-end gap-3 align-items-center">
             {/* Show Date Picker ONLY if "Previous" tab is active */}
             {activeTab === 'previous' && (
-              <input 
-                type="date" 
-                className="form-control border-secondary text-secondary" 
+              <input
+                type="date"
+                className="form-control border-secondary text-secondary"
                 style={{ maxWidth: '180px' }}
                 value={pastDateFilter}
                 onChange={e => setPastDateFilter(e.target.value)}
@@ -322,10 +460,10 @@ export default function ManageAppointmentsPage() {
             )}
             <div className="input-group" style={{ maxWidth: '300px' }}>
               <span className="input-group-text bg-white border-end-0"><i className="bi bi-search"></i></span>
-              <input 
-                type="text" 
-                className="form-control border-start-0 ps-0" 
-                placeholder="Search patient or phone..." 
+              <input
+                type="text"
+                className="form-control border-start-0 ps-0"
+                placeholder="Search patient or phone..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -366,7 +504,7 @@ export default function ManageAppointmentsPage() {
                   <tr><td colSpan={6} className="text-center py-5 text-muted">No appointments found matching this view.</td></tr>
                 ) : (
                   filteredAppointments.map((app) => (
-                    <tr key={app.id} style={{ backgroundColor: app.status === 'Pending' ? '#fffdf5' : 'transparent' }}>
+                    <tr key={app.id} style={{ backgroundColor: app.status === 'Pending' ? '#fffdf5' : app.status === 'Check-in' ? '#f0f9ff' : 'transparent' }}>
                       <td className="px-4">
                         <div className="fw-bold text-dark">{new Date(app.date).toLocaleDateString()}</div>
                         <div className="text-muted small">{app.time}</div>
@@ -379,12 +517,7 @@ export default function ManageAppointmentsPage() {
                       </td>
                       <td>{getStatusBadge(app.status)}</td>
                       <td className="text-end px-4">
-                        {app.status !== 'Confirmed' && (
-                          <button onClick={() => handleUpdateStatus(app.id, 'Confirmed')} className="btn btn-sm btn-outline-success me-2 fw-bold">Confirm</button>
-                        )}
-                        {app.status !== 'Cancelled' && (
-                          <button onClick={() => handleUpdateStatus(app.id, 'Cancelled')} className="btn btn-sm btn-outline-danger fw-bold">Cancel</button>
-                        )}
+                        {renderActionButtons(app)}
                       </td>
                     </tr>
                   ))
@@ -421,7 +554,7 @@ const AdminStyles = ({ theme }: { theme: any }) => (
       animation: pulseCard 1.5s infinite;
       border: 2px solid #dc3545 !important;
     }
-    
+
     .custom-tabs .nav-link {
       border: none;
       background: transparent;
