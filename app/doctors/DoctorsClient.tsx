@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import PublicNavbar from "../../components/PublicNavbar";
 
 // ─── Theme (Matches Booking Page) ──────────────────────────────────────────
 const THEME = {
@@ -19,38 +20,7 @@ export default function DoctorsClient({ doctors }: { doctors: any[] }) {
   return (
     <main className="book-page min-vh-100" style={{ background: THEME.dark, overflowX: "hidden" }}>
       <DoctorsStyles />
-
-      {/* ── Top Nav Bar (Matches Booking) ── */}
-      <nav className="book-topnav">
-        <div className="container d-flex align-items-center justify-content-between py-3">
-          <Link href="/" className="d-flex align-items-center gap-3 text-decoration-none">
-            <div className="book-logo-wrap">
-              <div className="book-logo-glow" />
-              <div style={{ position: "relative", zIndex: 1, margin: 3 }}>
-                <Image
-                  src="/images/adc.png"
-                  alt="Alaya Dental Care"
-                  width={44}
-                  height={44}
-                  priority
-                  style={{ borderRadius: 7, background: "#fff", padding: 2, display: "block", objectFit: "contain" }}
-                />
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: "1rem", color: THEME.cream, lineHeight: 1.1 }}>
-                Alaya Dental Care
-              </div>
-              <div style={{ fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase", color: THEME.gold }}>
-                Premium Dental Studio
-              </div>
-            </div>
-          </Link>
-          <Link href="/" className="book-back-btn">
-            <i className="bi bi-house me-2"></i>Home
-          </Link>
-        </div>
-      </nav>
+      <PublicNavbar currentPage="doctors" />
 
       {/* ── Background Elements ── */}
       <div className="book-grid-bg" />
@@ -153,13 +123,6 @@ const DoctorsStyles = () => (
     .book-glow { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
     .book-glow-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(8,99,81,0.20) 0%, transparent 70%); top: -150px; left: -150px; animation: float 10s infinite; }
     .book-glow-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(98,182,183,0.12) 0%, transparent 70%); bottom: -100px; right: -100px; animation: float 8s infinite reverse; }
-
-    /* ── Reuse Navigation ── */
-    .book-topnav { position: sticky; top: 0; z-index: 100; background: rgba(13,31,28,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(201,168,76,0.10); }
-    .book-back-btn { display: inline-flex; align-items: center; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.5); text-decoration: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.4rem 1rem; transition: all 0.3s ease; }
-    .book-back-btn:hover { color: #62B6B7; border-color: #62B6B7; }
-    .book-logo-wrap { position: relative; width: 50px; height: 50px; }
-    .book-logo-glow { position: absolute; inset: -3px; border-radius: 11px; background: linear-gradient(135deg, #086351, #62B6B7); }
 
     /* ── Header ── */
     .book-header-badge { display: inline-flex; align-items: center; border: 1px solid #C9A84C; border-radius: 2px; padding: 0.35rem 1rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #C9A84C; }

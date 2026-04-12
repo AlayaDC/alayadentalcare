@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLayout from "../../../components/AdminLayout";
 
 interface Patient {
   id: string;
@@ -244,21 +245,14 @@ export default function ConsultationsPage() {
     );
   }
 
-  return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-      {/* Navbar */}
-      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
-        <div className="container d-flex justify-content-between align-items-center">
-          <span className="navbar-brand fw-bold mb-0 text-truncate" style={{ maxWidth: "60%" }}>
-            Alaya Admin - Consultations
-          </span>
-          <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold">
-            <i className="bi bi-arrow-left me-1"></i> <span className="d-none d-sm-inline">Back</span>
-          </Link>
-        </div>
-      </nav>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
-      <div className="container py-4">
+  return (
+    <AdminLayout currentPage="consultations" onLogout={handleLogout}>
+      <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Header */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-3">
           <h4 className="fw-bold mb-3 mb-sm-0" style={{ color: themeColor }}>
@@ -573,6 +567,6 @@ export default function ConsultationsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

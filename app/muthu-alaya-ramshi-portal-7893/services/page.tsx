@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLayout from "../../../components/AdminLayout";
 
 interface PriceTier {
   label: string;
@@ -241,19 +242,14 @@ export default function ManageServicesPage() {
   if (authLoading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-success"></div></div>;
   if (!user) return <div className="container py-5 text-center"><h2 className="text-danger">Access Denied</h2><Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link></div>;
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* Navbar */}
-      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
-        <div className="container d-flex justify-content-between align-items-center">
-          <span className="navbar-brand fw-bold mb-0 text-truncate" style={{ maxWidth: '60%' }}>Alaya Admin - Services</span>
-          <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold">
-            <i className="bi bi-arrow-left me-1"></i> <span className="d-none d-sm-inline">Back</span>
-          </Link>
-        </div>
-      </nav>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
-      <div className="container py-4">
+  return (
+    <AdminLayout currentPage="services" onLogout={handleLogout}>
+      <div className="container-fluid px-3 px-lg-4 py-4">
 
         {/* Info Banner */}
         <div className="alert border-0 shadow-sm mb-4" style={{ backgroundColor: themeColor + '10', borderRadius: '12px' }}>
@@ -591,6 +587,6 @@ export default function ManageServicesPage() {
         </div>
       )}
 
-    </div>
+    </AdminLayout>
   );
 }

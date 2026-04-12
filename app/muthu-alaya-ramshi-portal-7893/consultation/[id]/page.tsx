@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../../utils/supabase/client";
+import AdminLayout from "../../../../components/AdminLayout";
 
 interface Patient {
   id: string;
@@ -485,21 +486,14 @@ export default function ConsultationDetailPage() {
     </div>
   );
 
-  return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-      {/* Navbar */}
-      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
-        <div className="container d-flex justify-content-between align-items-center">
-          <span className="navbar-brand fw-bold mb-0 text-truncate" style={{ maxWidth: "60%" }}>
-            Consultation - {consultation.patients?.name}
-          </span>
-          <Link href="/muthu-alaya-ramshi-portal-7893/consultations" className="btn btn-outline-light btn-sm fw-bold">
-            <i className="bi bi-arrow-left me-1"></i> Back
-          </Link>
-        </div>
-      </nav>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
-      <div className="container py-4">
+  return (
+    <AdminLayout currentPage="consultations" onLogout={handleLogout}>
+      <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Patient Info + Status Row */}
         <div className="row g-3 mb-4">
           <div className="col-lg-8">
@@ -991,6 +985,6 @@ export default function ConsultationDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

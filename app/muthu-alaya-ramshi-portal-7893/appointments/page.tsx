@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLayout from "../../../components/AdminLayout";
 
 const THEME = {
   primary: "#086351",
@@ -310,8 +311,14 @@ export default function ManageAppointmentsPage() {
   if (authLoading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-success"></div></div>;
   if (!user) return <div className="container py-5 text-center"><h2 className="text-danger">Access Denied</h2><Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link></div>;
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa', position: 'relative' }}>
+    <AdminLayout currentPage="appointments" onLogout={handleLogout}>
+      <div style={{ minHeight: '100vh', position: 'relative' }}>
 
       <AdminStyles theme={THEME} />
 
@@ -426,16 +433,8 @@ export default function ManageAppointmentsPage() {
         </div>
       )}
 
-      {/* ─── NAVBAR ─── */}
-      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: THEME.primary }}>
-        <div className="container">
-          <span className="navbar-brand fw-bold">Alaya Admin - Appointments</span>
-          <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold"><i className="bi bi-arrow-left me-2"></i>Back to Menu</Link>
-        </div>
-      </nav>
-
       {/* ─── MAIN DASHBOARD ─── */}
-      <div className="container py-5">
+      <div className="container-fluid px-3 px-lg-4 py-4">
 
         {/* Controls Header */}
         <div className="row align-items-center mb-4 g-3">
@@ -528,7 +527,8 @@ export default function ManageAppointmentsPage() {
         </div>
 
       </div>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 import { createClient } from "../../utils/supabase/client";
+import AdminLayout from "../../components/AdminLayout";
 
 interface DashboardData {
   today: {
@@ -189,31 +189,8 @@ export default function AdminDashboard() {
   const recentAppointments = dashboardData?.recentAppointments?.slice(0, 10) || [];
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-      {/* Navbar */}
-      <nav
-        className="navbar navbar-dark shadow-sm py-3"
-        style={{ backgroundColor: themeColor }}
-      >
-        <div className="container">
-          <span className="navbar-brand fw-bold">
-            <i className="bi bi-shield-check me-2"></i> Alaya Admin
-          </span>
-          <div className="d-flex gap-3 align-items-center">
-            <Link href="/" className="btn btn-outline-light btn-sm fw-bold">
-              Live Site
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="btn btn-light btn-sm fw-bold text-danger"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="container py-4">
+    <AdminLayout currentPage="dashboard" onLogout={handleLogout}>
+      <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Dashboard Title */}
         <h2 className="fw-bold mb-4" style={{ color: themeColor }}>
           <i className="bi bi-speedometer2 me-2"></i>Dashboard
@@ -354,83 +331,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Quick Navigation */}
-        <h5 className="fw-bold mb-3" style={{ color: themeColor }}>
-          <i className="bi bi-grid me-2"></i>Quick Navigation
-        </h5>
-        <div className="row g-3 mb-4">
-          {[
-            {
-              title: "Manage Appointments",
-              href: "/muthu-alaya-ramshi-portal-7893/appointments",
-              icon: "bi-calendar-check",
-              desc: "View bookings, confirm slots, and manage your daily calendar.",
-            },
-            {
-              title: "Consultations",
-              href: "/muthu-alaya-ramshi-portal-7893/consultations",
-              icon: "bi-journal-medical",
-              desc: "Case sheets, dental charts, and treatment plans.",
-            },
-            {
-              title: "Invoices & Billing",
-              href: "/muthu-alaya-ramshi-portal-7893/invoices",
-              icon: "bi-receipt",
-              desc: "Generate invoices, track payments, and manage billing.",
-            },
-            {
-              title: "Manage Patients",
-              href: "/muthu-alaya-ramshi-portal-7893/patients",
-              icon: "bi-people",
-              desc: "View and manage patient records and history.",
-            },
-            {
-              title: "Manage Doctors",
-              href: "/muthu-alaya-ramshi-portal-7893/doctors",
-              icon: "bi-person-badge",
-              desc: "Add new doctors and upload their photos to the database.",
-            },
-            {
-              title: "Services & Treatments",
-              href: "/muthu-alaya-ramshi-portal-7893/services",
-              icon: "bi-clipboard2-pulse",
-              desc: "Manage services, pricing, and treatment catalog.",
-            },
-            {
-              title: "Settings",
-              href: "/muthu-alaya-ramshi-portal-7893/settings",
-              icon: "bi-gear",
-              desc: "Configure clinic settings and preferences.",
-            },
-          ].map((item) => (
-            <div className="col-md-4 col-sm-6" key={item.href}>
-              <Link href={item.href} className="text-decoration-none">
-                <div
-                  className="card border-0 shadow-sm h-100 text-center p-4"
-                  style={{
-                    borderRadius: "20px",
-                    transition: "transform 0.2s",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.transform = "translateY(-5px)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.transform = "translateY(0)")
-                  }
-                >
-                  <i
-                    className={`bi ${item.icon} display-4 mb-3`}
-                    style={{ color: themeColor }}
-                  ></i>
-                  <h5 className="fw-bold text-dark">{item.title}</h5>
-                  <p className="text-muted small mb-0">{item.desc}</p>
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-
         {/* Recent Appointments Table */}
         <h5 className="fw-bold mb-3" style={{ color: themeColor }}>
           <i className="bi bi-clock-history me-2"></i>Recent Appointments
@@ -508,6 +408,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

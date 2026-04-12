@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import PublicNavbar from "../../../components/PublicNavbar";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const THEME = {
@@ -33,25 +34,7 @@ export default function ServiceDetailClient({ service }: { service: any | null }
   return (
     <main className="service-detail-page" style={{ background: THEME.cream, minHeight: "100vh" }}>
       <DetailStyles />
-      
-      {/* ── Top Navigation ── */}
-      <nav className="detail-navbar sticky-top">
-        <div className="container d-flex align-items-center justify-content-between py-2">
-          <Link href="/#home" className="d-flex align-items-center gap-3 text-decoration-none">
-            <div style={{ position: "relative", width: 44, height: 44 }}>
-              <div className="logo-glow" />
-              <img src="/images/adc.png" alt="Alaya Dental" style={{ position: "relative", zIndex: 1, width: "100%", height: "100%", objectFit: "contain", borderRadius: 8, background: "#fff", padding: 2 }} />
-            </div>
-            <div className="d-none d-sm-block">
-              <div className="font-serif gradient-text fw-bold" style={{ fontSize: "1.1rem", lineHeight: 1.1 }}>Alaya Dental Care</div>
-              <div style={{ fontSize: "0.6rem", letterSpacing: "2px", textTransform: "uppercase", color: THEME.gold, fontWeight: 600 }}>Premium Dental Studio</div>
-            </div>
-          </Link>
-          <Link href="/services" className="btn-back">
-            <i className="bi bi-arrow-left me-2"></i> All Services
-          </Link>
-        </div>
-      </nav>
+      <PublicNavbar currentPage="services" />
 
       {/* ── Hero Banner ── */}
       <section className="service-hero">
@@ -220,40 +203,6 @@ const DetailStyles = () => (
     @keyframes spin-slow {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
-    }
-
-    /* Navbar */
-    .detail-navbar {
-      background: rgba(250,247,242,0.95);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(8,99,81,0.05);
-      box-shadow: 0 4px 30px rgba(8,99,81,0.05);
-    }
-    .logo-glow {
-      position: absolute;
-      inset: -1px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, ${THEME.primary}, ${THEME.accent});
-      animation: pulse-glow 3s ease-in-out infinite;
-      z-index: 0;
-    }
-    .btn-back {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: ${THEME.charcoal};
-      text-decoration: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      border: 1px solid rgba(8,99,81,0.1);
-      transition: all 0.3s ease;
-    }
-    .btn-back:hover {
-      background: ${THEME.primary};
-      color: #fff;
-      border-color: ${THEME.primary};
     }
 
     /* Hero Section */

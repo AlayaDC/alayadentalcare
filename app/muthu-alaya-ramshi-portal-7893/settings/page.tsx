@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLayout from "../../../components/AdminLayout";
 
 interface WorkingHours {
   mon: string;
@@ -134,19 +135,14 @@ export default function SettingsPage() {
     );
   }
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* Navbar */}
-      <nav className="navbar navbar-dark shadow-sm py-3" style={{ backgroundColor: themeColor }}>
-        <div className="container d-flex justify-content-between align-items-center">
-          <span className="navbar-brand fw-bold mb-0 text-truncate" style={{ maxWidth: '60%' }}>Alaya Admin - Settings</span>
-          <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-outline-light btn-sm fw-bold">
-            <i className="bi bi-arrow-left me-1"></i> <span className="d-none d-sm-inline">Back</span>
-          </Link>
-        </div>
-      </nav>
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
-      <div className="container py-4">
+  return (
+    <AdminLayout currentPage="settings" onLogout={handleLogout}>
+      <div className="container-fluid px-3 px-lg-4 py-4">
         <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
           <div className="card-body p-4">
             <h5 className="fw-bold mb-4" style={{ color: themeColor }}>
@@ -254,6 +250,6 @@ export default function SettingsPage() {
           </small>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
