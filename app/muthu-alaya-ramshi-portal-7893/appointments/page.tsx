@@ -217,7 +217,17 @@ export default function ManageAppointmentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
       });
-      if (response.ok) fetchAppointments(false);
+      if (response.ok) {
+        const result = await response.json();
+        // If check-in returned a patient_id, store it on the appointment locally
+        if (newStatus === 'Check-in' && result.patient_id) {
+          setAppointments(prev => prev.map(app =>
+            app.id === id ? { ...app, status: newStatus, patient_id: result.patient_id } : app
+          ));
+        } else {
+          fetchAppointments(false);
+        }
+      }
     } catch (error) {
       alert("Network error.");
     }
@@ -298,9 +308,21 @@ export default function ManageAppointmentsPage() {
         );
       case 'Check-in':
         return (
-          <button onClick={() => handleUpdateStatus(app.id, 'Completed')} className="btn btn-sm btn-outline-primary fw-bold">Complete</button>
+          <>
+            <button onClick={() => handleUpdateStatus(app.id, 'Completed')} className="btn btn-sm btn-outline-primary me-2 fw-bold">Complete</button>
+            {app.patient_id && (
+              <Link href={`/muthu-alaya-ramshi-portal-7893/patients?highlight=${app.patient_id}`} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }}>
+                <i className="bi bi-person-fill me-1"></i>View Patient
+              </Link>
+            )}
+          </>
         );
       case 'Completed':
+        return app.patient_id ? (
+          <Link href={`/muthu-alaya-ramshi-portal-7893/patients?highlight=${app.patient_id}`} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }}>
+            <i className="bi bi-person-fill me-1"></i>View Patient
+          </Link>
+        ) : null;
       case 'Cancelled':
       default:
         return null;

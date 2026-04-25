@@ -104,14 +104,58 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid status (must be Pending, Confirmed, Cancelled, Check-in, or Completed)' }, { status: 400 });
     }
 
+    let patient_id: string | null = null;
+
+    // Auto-create patient record on Check-in
+    if (status === 'Check-in') {
+      // First fetch the appointment to get name & phone
+      const { data: apptData, error: apptError } = await supabase
+        .from('appointments')
+        .select('name, phone')
+        .eq('id', id)
+        .single();
+
+      if (apptError || !apptData) {
+        return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+      }
+
+      const { name, phone } = apptData;
+
+      // Check if patient already exists by phone
+      const { data: existingPatients } = await supabase
+        .from('patients')
+        .select('id')
+        .ilike('phone', `%${phone.replace(/\D/g, '').slice(-10)}%`)
+        .limit(1);
+
+      if (existingPatients && existingPatients.length > 0) {
+        patient_id = existingPatients[0].id;
+      } else {
+        // Create new patient record
+        const { data: newPatient, error: patientError } = await supabase
+          .from('patients')
+          .insert([{ name: name.trim(), phone }])
+          .select('id')
+          .single();
+
+        if (!patientError && newPatient) {
+          patient_id = newPatient.id;
+        }
+      }
+    }
+
+    // Update appointment status (and patient_id if we have one)
+    const updatePayload: Record<string, unknown> = { status };
+    if (patient_id) updatePayload.patient_id = patient_id;
+
     const { data, error } = await supabase
       .from('appointments')
-      .update({ status })
+      .update(updatePayload)
       .eq('id', id)
       .select();
 
     if (error) throw error;
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data, patient_id });
   } catch {
     return NextResponse.json({ error: 'Failed to update appointment' }, { status: 500 });
   }
