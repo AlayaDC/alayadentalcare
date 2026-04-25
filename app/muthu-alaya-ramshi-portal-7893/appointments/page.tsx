@@ -28,6 +28,10 @@ export default function ManageAppointmentsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [liveAlert, setLiveAlert] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
 
+  // ─── VIEW PATIENT POPUP STATE ───
+  const [viewPatient, setViewPatient] = useState<any>(null);
+  const [viewPatientLoading, setViewPatientLoading] = useState(false);
+
   // ─── NEW APPOINTMENT FORM STATE ───
   const [newApptForm, setNewApptForm] = useState({
     name: "", phone: "", location: "chettiyamkinar", service: "General Consultation", date: "", time: ""
@@ -235,6 +239,43 @@ export default function ManageAppointmentsPage() {
     }
   };
 
+  // ─── VIEW PATIENT POPUP ───
+  const handleViewPatient = async (patientId: string) => {
+    setViewPatientLoading(true);
+    try {
+      const response = await fetch(`/api/admin/patients?search=`);
+      const result = await response.json();
+      if (response.ok && result.data) {
+        const patient = result.data.find((p: any) => p.id === patientId);
+        if (patient) setViewPatient(patient);
+        else alert("Patient not found.");
+      }
+    } catch { alert("Failed to load patient."); }
+    finally { setViewPatientLoading(false); }
+  };
+
+  const handleBookConsultation = async (patient: any) => {
+    if (!window.confirm(`Create a new consultation for ${patient.name}?`)) return;
+    try {
+      const response = await fetch('/api/admin/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: patient.id,
+          date: new Date().toISOString().split('T')[0],
+          chief_complaint: '',
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.data) {
+        setViewPatient(null);
+        window.location.href = `/muthu-alaya-ramshi-portal-7893/consultation/${result.data.id}`;
+      } else {
+        alert('Failed to create consultation: ' + (result.error || 'Unknown error'));
+      }
+    } catch { alert('Network error.'); }
+  };
+
   const handleManualAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -302,9 +343,9 @@ export default function ManageAppointmentsPage() {
         );
       case 'Check-in':
         return app.patient_id ? (
-          <Link href={`/muthu-alaya-ramshi-portal-7893/patients?highlight=${app.patient_id}`} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }}>
+          <button onClick={() => handleViewPatient(app.patient_id)} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }} disabled={viewPatientLoading}>
             <i className="bi bi-person-fill me-1"></i>View Patient
-          </Link>
+          </button>
         ) : null;
       case 'Cancelled':
       default:
@@ -532,6 +573,102 @@ export default function ManageAppointmentsPage() {
         </div>
 
       </div>
+
+      {/* ─── VIEW PATIENT POPUP ─── */}
+      {viewPatient && (
+        <div className="position-fixed w-100 h-100 top-0 start-0 d-flex justify-content-center align-items-center" style={{ zIndex: 1060, background: 'rgba(0,0,0,0.6)' }}>
+          <div className="bg-white" style={{ borderRadius: '20px', width: '90%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 80px rgba(0,0,0,0.2)' }}>
+
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center p-4 pb-0">
+              <h5 className="fw-bold m-0" style={{ color: THEME.primary }}>Patient Details</h5>
+              <button type="button" className="btn-close" onClick={() => setViewPatient(null)}></button>
+            </div>
+
+            <div className="p-4">
+              {/* Avatar & Name */}
+              <div className="text-center mb-4">
+                <div
+                  className="d-inline-flex justify-content-center align-items-center shadow-sm mb-3"
+                  style={{ width: '70px', height: '70px', borderRadius: '50%', backgroundColor: THEME.primary + '20', color: THEME.primary, fontWeight: 'bold', fontSize: '1.6rem' }}
+                >
+                  {viewPatient.name?.charAt(0)?.toUpperCase() || "P"}
+                </div>
+                <h5 className="fw-bold mb-1">{viewPatient.name}</h5>
+                <p className="text-muted mb-0">{viewPatient.phone}</p>
+              </div>
+
+              {/* Info Grid */}
+              <div className="row g-3 mb-3">
+                {viewPatient.email && (
+                  <div className="col-6">
+                    <small className="text-muted d-block">Email</small>
+                    <span className="fw-semibold" style={{ fontSize: '0.9rem' }}>{viewPatient.email}</span>
+                  </div>
+                )}
+                <div className="col-6">
+                  <small className="text-muted d-block">Age</small>
+                  <span className="fw-semibold">{viewPatient.age || "—"}</span>
+                </div>
+                <div className="col-6">
+                  <small className="text-muted d-block">Gender</small>
+                  <span className="fw-semibold">{viewPatient.gender || "—"}</span>
+                </div>
+                <div className="col-6">
+                  <small className="text-muted d-block">Blood Group</small>
+                  {viewPatient.blood_group ? (
+                    <span className="badge bg-danger bg-opacity-10 text-danger fw-bold">{viewPatient.blood_group}</span>
+                  ) : <span className="fw-semibold">—</span>}
+                </div>
+              </div>
+
+              {viewPatient.address && (
+                <div className="mb-3">
+                  <small className="text-muted d-block">Address</small>
+                  <span style={{ fontSize: '0.9rem' }}>{viewPatient.address}</span>
+                </div>
+              )}
+
+              {viewPatient.medical_history && viewPatient.medical_history.length > 0 && (
+                <div className="mb-3">
+                  <small className="text-muted d-block mb-1">Medical History</small>
+                  {viewPatient.medical_history.map((tag: string, idx: number) => (
+                    <span key={idx} className="badge me-1 mb-1" style={{ backgroundColor: THEME.primary + '15', color: THEME.primary, fontSize: '0.8rem' }}>{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              {viewPatient.notes && (
+                <div className="mb-3">
+                  <small className="text-muted d-block">Notes</small>
+                  <span style={{ fontSize: '0.9rem' }}>{viewPatient.notes}</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="d-flex flex-column gap-2 mt-4 pt-3 border-top">
+                <button
+                  onClick={() => handleBookConsultation(viewPatient)}
+                  className="btn text-white fw-bold w-100"
+                  style={{ background: THEME.primary, borderRadius: '10px', padding: '0.65rem' }}
+                >
+                  <i className="bi bi-clipboard2-pulse me-2"></i> Book Consultation
+                </button>
+                <Link
+                  href={`/muthu-alaya-ramshi-portal-7893/patients`}
+                  className="btn btn-outline-secondary fw-bold w-100"
+                  style={{ borderRadius: '10px', padding: '0.65rem' }}
+                  onClick={() => setViewPatient(null)}
+                >
+                  <i className="bi bi-arrow-right me-2"></i> Go to Patients Page
+                </Link>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       </div>
     </AdminLayout>
   );

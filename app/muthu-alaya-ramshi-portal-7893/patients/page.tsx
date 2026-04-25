@@ -32,6 +32,10 @@ export default function ManagePatientsPage() {
   // --- Modal State ---
   const [showModal, setShowModal] = useState(false);
 
+  // --- View Patient Modal ---
+  const [viewPatient, setViewPatient] = useState<any>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
   const themeColor = '#086351';
   const supabase = createClient();
 
@@ -175,6 +179,42 @@ export default function ManagePatientsPage() {
     setMessage("");
   };
 
+  // --- View Patient ---
+  const handleView = (patient: any) => {
+    setViewPatient(patient);
+    setShowViewModal(true);
+  };
+
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setViewPatient(null);
+  };
+
+  // --- Book Consultation from View Modal ---
+  const handleBookConsultation = async (patient: any) => {
+    if (!window.confirm(`Create a new consultation for ${patient.name}?`)) return;
+    try {
+      const response = await fetch('/api/admin/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: patient.id,
+          date: new Date().toISOString().split('T')[0],
+          chief_complaint: '',
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.data) {
+        closeViewModal();
+        window.location.href = `/muthu-alaya-ramshi-portal-7893/consultation/${result.data.id}`;
+      } else {
+        alert('Failed to create consultation: ' + (result.error || 'Unknown error'));
+      }
+    } catch {
+      alert('Network error creating consultation.');
+    }
+  };
+
   // --- Auth Loading ---
   if (authLoading) {
     return (
@@ -285,11 +325,8 @@ export default function ManagePatientsPage() {
                         )}
                       </td>
                       <td className="text-end px-4">
-                        <button onClick={() => handleEdit(patient)} className="btn btn-sm btn-outline-primary me-2">
-                          <i className="bi bi-pencil-square"></i> Edit
-                        </button>
-                        <button onClick={() => handleDelete(patient.id)} className="btn btn-sm btn-outline-danger">
-                          <i className="bi bi-trash"></i> Delete
+                        <button onClick={() => handleView(patient)} className="btn btn-sm fw-bold text-white" style={{ background: themeColor, borderRadius: '8px' }}>
+                          <i className="bi bi-eye me-1"></i> View
                         </button>
                       </td>
                     </tr>
@@ -355,11 +392,8 @@ export default function ManagePatientsPage() {
                   )}
                 </div>
                 <div className="card-footer bg-white border-top-0 d-flex justify-content-end gap-2 pb-3">
-                  <button onClick={() => handleEdit(patient)} className="btn btn-sm btn-outline-primary flex-fill">
-                    <i className="bi bi-pencil-square"></i> Edit
-                  </button>
-                  <button onClick={() => handleDelete(patient.id)} className="btn btn-sm btn-outline-danger flex-fill">
-                    <i className="bi bi-trash"></i> Delete
+                  <button onClick={() => handleView(patient)} className="btn btn-sm fw-bold text-white flex-fill" style={{ background: themeColor, borderRadius: '8px' }}>
+                    <i className="bi bi-eye me-1"></i> View
                   </button>
                 </div>
               </div>
@@ -545,6 +579,116 @@ export default function ManagePatientsPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- VIEW PATIENT MODAL --- */}
+      {showViewModal && viewPatient && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '20px' }}>
+
+              <div className="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+                <h5 className="modal-title fw-bold" style={{ color: themeColor }}>Patient Details</h5>
+                <button type="button" className="btn-close" onClick={closeViewModal}></button>
+              </div>
+
+              <div className="modal-body px-4 py-3">
+                {/* Patient Avatar & Name */}
+                <div className="text-center mb-4">
+                  <div
+                    className="d-inline-flex justify-content-center align-items-center shadow-sm mb-3"
+                    style={{
+                      width: '70px', height: '70px', borderRadius: '50%',
+                      backgroundColor: themeColor + '20', color: themeColor,
+                      fontWeight: 'bold', fontSize: '1.6rem',
+                    }}
+                  >
+                    {viewPatient.name?.charAt(0)?.toUpperCase() || "P"}
+                  </div>
+                  <h5 className="fw-bold mb-1">{viewPatient.name}</h5>
+                  <p className="text-muted mb-0">{viewPatient.phone}</p>
+                </div>
+
+                {/* Details Grid */}
+                <div className="row g-3 mb-3">
+                  {viewPatient.email && (
+                    <div className="col-6">
+                      <small className="text-muted d-block">Email</small>
+                      <span className="fw-semibold" style={{ fontSize: '0.9rem' }}>{viewPatient.email}</span>
+                    </div>
+                  )}
+                  <div className="col-6">
+                    <small className="text-muted d-block">Age</small>
+                    <span className="fw-semibold">{viewPatient.age || "—"}</span>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-muted d-block">Gender</small>
+                    <span className="fw-semibold">{viewPatient.gender || "—"}</span>
+                  </div>
+                  <div className="col-6">
+                    <small className="text-muted d-block">Blood Group</small>
+                    {viewPatient.blood_group ? (
+                      <span className="badge bg-danger bg-opacity-10 text-danger fw-bold">{viewPatient.blood_group}</span>
+                    ) : <span className="fw-semibold">—</span>}
+                  </div>
+                </div>
+
+                {viewPatient.address && (
+                  <div className="mb-3">
+                    <small className="text-muted d-block">Address</small>
+                    <span style={{ fontSize: '0.9rem' }}>{viewPatient.address}</span>
+                  </div>
+                )}
+
+                {viewPatient.medical_history && viewPatient.medical_history.length > 0 && (
+                  <div className="mb-3">
+                    <small className="text-muted d-block mb-1">Medical History</small>
+                    <div>
+                      {viewPatient.medical_history.map((tag: string, idx: number) => (
+                        <span key={idx} className="badge me-1 mb-1" style={{ backgroundColor: themeColor + '15', color: themeColor, fontSize: '0.8rem' }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viewPatient.notes && (
+                  <div className="mb-3">
+                    <small className="text-muted d-block">Notes</small>
+                    <span style={{ fontSize: '0.9rem' }}>{viewPatient.notes}</span>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="d-flex flex-column gap-2 mt-4 pt-2 border-top">
+                  <button
+                    onClick={() => { closeViewModal(); handleEdit(viewPatient); }}
+                    className="btn btn-outline-primary fw-bold w-100"
+                    style={{ borderRadius: '10px', padding: '0.6rem' }}
+                  >
+                    <i className="bi bi-pencil-square me-2"></i> Edit Patient
+                  </button>
+                  <button
+                    onClick={() => handleBookConsultation(viewPatient)}
+                    className="btn text-white fw-bold w-100"
+                    style={{ background: themeColor, borderRadius: '10px', padding: '0.6rem' }}
+                  >
+                    <i className="bi bi-clipboard2-pulse me-2"></i> Book Consultation
+                  </button>
+                  <button
+                    onClick={() => { closeViewModal(); handleDelete(viewPatient.id); }}
+                    className="btn btn-outline-danger fw-bold w-100"
+                    style={{ borderRadius: '10px', padding: '0.6rem' }}
+                  >
+                    <i className="bi bi-trash me-2"></i> Delete Patient
+                  </button>
+                </div>
               </div>
 
             </div>
