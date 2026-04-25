@@ -21,8 +21,6 @@ const NAV_ITEMS = [
   { key: "doctors", label: "Doctors", icon: "bi-person-badge", href: `${ADMIN_BASE}/doctors` },
   { key: "services", label: "Services", icon: "bi-stars", href: `${ADMIN_BASE}/services` },
   { key: "content", label: "Contents", icon: "bi-pencil-square", href: `${ADMIN_BASE}/content` },
-  { key: "divider", label: "", icon: "", href: "" },
-  { key: "settings", label: "Settings", icon: "bi-gear", href: `${ADMIN_BASE}/settings` },
 ];
 
 export default function AdminSidebar({ currentPage, onLogout }: AdminSidebarProps) {
