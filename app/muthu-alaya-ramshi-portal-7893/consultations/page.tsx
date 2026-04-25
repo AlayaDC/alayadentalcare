@@ -41,6 +41,7 @@ interface Consultation {
 export default function ConsultationsPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -104,8 +105,8 @@ export default function ConsultationsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
         if (session?.user) {
-          fetchConsultations();
-          fetchDoctors();
+          await Promise.all([fetchConsultations(), fetchDoctors()]);
+          setDataLoading(false);
         }
       } catch (err) {
         console.error("Auth check failed:", err);
@@ -257,6 +258,13 @@ export default function ConsultationsPage() {
 
   return (
     <AdminLayout currentPage="consultations" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading consultations...</p>
+        </div>
+      ) : (
+      <>
       <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Header */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-3">
@@ -561,6 +569,8 @@ export default function ConsultationsPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </AdminLayout>
   );

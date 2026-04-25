@@ -11,6 +11,7 @@ import AdminLayout from "../../../components/AdminLayout";
 export default function ManageDoctorsPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   // --- List and Edit States ---
   const [doctorsList, setDoctorsList] = useState<any[]>([]);
@@ -35,7 +36,10 @@ export default function ManageDoctorsPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
-        if (session?.user) fetchDoctors();
+        if (session?.user) {
+          await fetchDoctors();
+          setDataLoading(false);
+        }
       } catch (err) {
         console.error("Auth check failed:", err);
       } finally {
@@ -149,8 +153,15 @@ export default function ManageDoctorsPage() {
 
   return (
     <AdminLayout currentPage="doctors" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading doctors...</p>
+        </div>
+      ) : (
+      <>
       <div className="container-fluid px-3 px-lg-4 py-4">
-        
+
         {/* Header and Add Button */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-4">
           <h4 className="fw-bold mb-3 mb-sm-0" style={{ color: themeColor }}>Doctors Database</h4>
@@ -294,6 +305,8 @@ export default function ManageDoctorsPage() {
         </div>
       )}
 
+      </>
+      )}
     </AdminLayout>
   );
 }

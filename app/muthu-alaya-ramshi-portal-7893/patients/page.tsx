@@ -11,6 +11,7 @@ import AdminLayout from "../../../components/AdminLayout";
 export default function ManagePatientsPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const [patientsList, setPatientsList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +69,10 @@ export default function ManagePatientsPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
-        if (session?.user) fetchPatients();
+        if (session?.user) {
+          await fetchPatients();
+          setDataLoading(false);
+        }
       } catch (err) {
         console.error("Auth check failed:", err);
       } finally {
@@ -275,6 +279,13 @@ export default function ManagePatientsPage() {
 
   return (
     <AdminLayout currentPage="patients" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading patients...</p>
+        </div>
+      ) : (
+      <>
       <div className="container-fluid px-3 px-lg-4 py-4">
 
         {/* Header, Search, and Add Button */}
@@ -862,6 +873,8 @@ export default function ManagePatientsPage() {
         </div>
       )}
 
+      </>
+      )}
     </AdminLayout>
   );
 }

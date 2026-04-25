@@ -20,6 +20,7 @@ const THEME = {
 export default function ManageAppointmentsPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [appointments, setAppointments] = useState<any[]>([]);
 
   // ─── NEW UI STATES ───
@@ -195,6 +196,7 @@ export default function ManageAppointmentsPage() {
         if (session?.user) {
           await fetchAppointments(false);
           initialFetchDoneRef.current = true;
+          setDataLoading(false);
         }
       } catch (err) {
         console.error("Auth check failed:", err);
@@ -325,6 +327,12 @@ export default function ManageAppointmentsPage() {
 
   return (
     <AdminLayout currentPage="appointments" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: THEME.primary, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading appointments...</p>
+        </div>
+      ) : (
       <div style={{ minHeight: '100vh', position: 'relative' }}>
 
       <AdminStyles theme={THEME} />
@@ -536,6 +544,7 @@ export default function ManageAppointmentsPage() {
       </div>
 
       </div>
+      )}
     </AdminLayout>
   );
 }

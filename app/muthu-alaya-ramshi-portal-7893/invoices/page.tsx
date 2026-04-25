@@ -46,6 +46,7 @@ const PAYMENT_METHODS = ["Cash", "UPI", "Card", "Bank"];
 export default function InvoicesPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -83,7 +84,10 @@ export default function InvoicesPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
-        if (session?.user) fetchInvoices();
+        if (session?.user) {
+          await fetchInvoices();
+          setDataLoading(false);
+        }
       } catch (err) {
         console.error("Auth check failed:", err);
       } finally {
@@ -261,6 +265,13 @@ export default function InvoicesPage() {
 
   return (
     <AdminLayout currentPage="invoices" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading invoices...</p>
+        </div>
+      ) : (
+      <>
       <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Summary Cards */}
         <div className="row g-3 mb-4">
@@ -711,6 +722,8 @@ export default function InvoicesPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </AdminLayout>
   );

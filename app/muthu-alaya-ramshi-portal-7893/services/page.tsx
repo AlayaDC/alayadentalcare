@@ -18,6 +18,7 @@ const CATEGORIES = ["General", "Cosmetic", "Orthodontic", "Surgical", "Preventiv
 export default function ManageServicesPage() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const [servicesList, setServicesList] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -69,7 +70,10 @@ export default function ManageServicesPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
-        if (session?.user) fetchServices();
+        if (session?.user) {
+          await fetchServices();
+          setDataLoading(false);
+        }
       } catch (err) {
         console.error("Auth check failed:", err);
       } finally {
@@ -250,6 +254,13 @@ export default function ManageServicesPage() {
 
   return (
     <AdminLayout currentPage="services" onLogout={handleLogout}>
+      {dataLoading ? (
+        <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
+          <p className="mt-3 text-muted fw-semibold small">Loading services...</p>
+        </div>
+      ) : (
+      <>
       <div className="container-fluid px-3 px-lg-4 py-4">
 
         {/* Info Banner */}
@@ -588,6 +599,8 @@ export default function ManageServicesPage() {
         </div>
       )}
 
+      </>
+      )}
     </AdminLayout>
   );
 }
