@@ -242,6 +242,14 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
   const { isScrolled, activeNavItem, setManualNav } = useScrollState();
   const doctors = initialDoctors;
   const services = initialServices;
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+
+  // Detect if database connection failed
+  const isDbDown = !siteContent && initialDoctors.length === 0 && initialServices.length === 0;
+
+  useEffect(() => {
+    if (isDbDown) setShowMaintenanceDialog(true);
+  }, [isDbDown]);
 
   // Merge DB content with defaults (DB takes priority)
   const topbar = { ...DEFAULT_TOPBAR, ...siteContent?.topbar };
@@ -306,6 +314,131 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
         themeColor={THEME_CONFIG.primary}
         accentColor={THEME_CONFIG.accent}
       />
+
+      {/* ─── Maintenance / Technical Issue Dialog ─── */}
+      {showMaintenanceDialog && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(13,31,28,0.6)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              zIndex: 9998,
+            }}
+            onClick={() => setShowMaintenanceDialog(false)}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 9999,
+              width: "90%",
+              maxWidth: "480px",
+              background: "#fff",
+              borderRadius: "20px",
+              padding: "2.5rem 2rem",
+              boxShadow: "0 25px 80px rgba(0,0,0,0.25)",
+              textAlign: "center",
+              animation: "fadeSlideIn 0.4s ease",
+            }}
+          >
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes fadeSlideIn {
+                from { opacity: 0; transform: translate(-50%, -45%); }
+                to { opacity: 1; transform: translate(-50%, -50%); }
+              }
+            `}} />
+            <div
+              style={{
+                width: "70px",
+                height: "70px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #FFF3CD, #FFEAA7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1.25rem",
+              }}
+            >
+              <i className="bi bi-tools" style={{ fontSize: "1.8rem", color: "#B8860B" }}></i>
+            </div>
+            <h4
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 700,
+                color: "#1A2E2A",
+                marginBottom: "0.75rem",
+                fontSize: "1.35rem",
+              }}
+            >
+              Under Maintenance
+            </h4>
+            <p
+              style={{
+                color: "#6B7B78",
+                fontSize: "0.95rem",
+                lineHeight: 1.7,
+                marginBottom: "1.5rem",
+              }}
+            >
+              We are currently experiencing a technical issue. Our team is working to resolve it as quickly as possible. Please check back shortly.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                onClick={() => setShowMaintenanceDialog(false)}
+                style={{
+                  background: THEME_CONFIG.primary,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "0.65rem 1.8rem",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(8,99,81,0.3)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                Continue Browsing
+              </button>
+              <a
+                href={`tel:${topbar.phone.replace(/\s/g, '')}`}
+                style={{
+                  background: "transparent",
+                  color: THEME_CONFIG.primary,
+                  border: `1.5px solid ${THEME_CONFIG.primary}`,
+                  borderRadius: "10px",
+                  padding: "0.65rem 1.8rem",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(8,99,81,0.06)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <i className="bi bi-telephone-fill"></i> Call Us
+              </a>
+            </div>
+          </div>
+        </>
+      )}
+
       <TopBar content={topbar} />
       <Navigation
         isScrolled={isScrolled}
