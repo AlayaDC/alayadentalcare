@@ -12,6 +12,52 @@ const themeColor = "#086351";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SiteContent = Record<string, any>;
 
+// Defined outside component to prevent re-creation on every render (fixes input focus loss)
+const InputField = ({ label, section, field, textarea = false, content, updateField }: {
+  label: string; section: string; field: string; textarea?: boolean;
+  content: SiteContent; updateField: (section: string, field: string, value: unknown) => void;
+}) => (
+  <div className="mb-3">
+    <label className="form-label fw-semibold small text-muted">{label}</label>
+    {textarea ? (
+      <textarea
+        className="form-control bg-light border-0"
+        rows={3}
+        value={content[section]?.[field] || ""}
+        onChange={(e) => updateField(section, field, e.target.value)}
+      />
+    ) : (
+      <input
+        type="text"
+        className="form-control bg-light border-0"
+        value={content[section]?.[field] || ""}
+        onChange={(e) => updateField(section, field, e.target.value)}
+      />
+    )}
+  </div>
+);
+
+const SectionHeader = ({ sectionKey, label, icon, openSections, toggleSection }: {
+  sectionKey: string; label: string; icon: string;
+  openSections: Record<string, boolean>; toggleSection: (key: string) => void;
+}) => (
+  <div
+    className="d-flex align-items-center justify-content-between p-3 rounded-3"
+    style={{
+      background: openSections[sectionKey] ? "rgba(8,99,81,0.08)" : "#f8f9fa",
+      cursor: "pointer",
+      transition: "all 0.2s",
+    }}
+    onClick={() => toggleSection(sectionKey)}
+  >
+    <div className="d-flex align-items-center gap-2">
+      <i className={`bi ${icon}`} style={{ color: themeColor, fontSize: "1.1rem" }}></i>
+      <span className="fw-bold">{label}</span>
+    </div>
+    <i className={`bi bi-chevron-${openSections[sectionKey] ? "up" : "down"}`}></i>
+  </div>
+);
+
 const SECTION_CONFIG = [
   { key: "topbar", label: "Top Bar", icon: "bi-broadcast" },
   { key: "hero", label: "Hero Section", icon: "bi-stars" },
@@ -161,45 +207,6 @@ export default function ManageContentPage() {
     );
   }
 
-  const InputField = ({ label, section, field, textarea = false }: { label: string; section: string; field: string; textarea?: boolean }) => (
-    <div className="mb-3">
-      <label className="form-label fw-semibold small text-muted">{label}</label>
-      {textarea ? (
-        <textarea
-          className="form-control bg-light border-0"
-          rows={3}
-          value={content[section]?.[field] || ""}
-          onChange={(e) => updateField(section, field, e.target.value)}
-        />
-      ) : (
-        <input
-          type="text"
-          className="form-control bg-light border-0"
-          value={content[section]?.[field] || ""}
-          onChange={(e) => updateField(section, field, e.target.value)}
-        />
-      )}
-    </div>
-  );
-
-  const SectionHeader = ({ sectionKey, label, icon }: { sectionKey: string; label: string; icon: string }) => (
-    <div
-      className="d-flex align-items-center justify-content-between p-3 rounded-3"
-      style={{
-        background: openSections[sectionKey] ? "rgba(8,99,81,0.08)" : "#f8f9fa",
-        cursor: "pointer",
-        transition: "all 0.2s",
-      }}
-      onClick={() => toggleSection(sectionKey)}
-    >
-      <div className="d-flex align-items-center gap-2">
-        <i className={`bi ${icon}`} style={{ color: themeColor, fontSize: "1.1rem" }}></i>
-        <span className="fw-bold">{label}</span>
-      </div>
-      <i className={`bi bi-chevron-${openSections[sectionKey] ? "up" : "down"}`}></i>
-    </div>
-  );
-
   return (
     <AdminLayout currentPage="content" onLogout={handleLogout}>
       <div className="container-fluid px-3 px-lg-4 py-4">
@@ -236,12 +243,12 @@ export default function ManageContentPage() {
             {/* ─── Top Bar ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="topbar" label="Top Bar" icon="bi-broadcast" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="topbar" label="Top Bar" icon="bi-broadcast" />
                 {openSections.topbar && (
                   <div className="p-3">
-                    <InputField label="Working Hours" section="topbar" field="working_hours" />
-                    <InputField label="Phone Number" section="topbar" field="phone" />
-                    <InputField label="WhatsApp Number (e.g. 918113003220)" section="topbar" field="whatsapp_number" />
+                    <InputField content={content} updateField={updateField} label="Working Hours" section="topbar" field="working_hours" />
+                    <InputField content={content} updateField={updateField} label="Phone Number" section="topbar" field="phone" />
+                    <InputField content={content} updateField={updateField} label="WhatsApp Number (911234567890)" section="topbar" field="whatsapp_number" />
                   </div>
                 )}
               </div>
@@ -250,29 +257,29 @@ export default function ManageContentPage() {
             {/* ─── Hero Section ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="hero" label="Hero Section" icon="bi-stars" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="hero" label="Hero Section" icon="bi-stars" />
                 {openSections.hero && (
                   <div className="p-3">
-                    <InputField label="Badge Text" section="hero" field="badge_text" />
+                    <InputField content={content} updateField={updateField} label="Badge Text" section="hero" field="badge_text" />
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Title Line 1" section="hero" field="title_line1" />
+                        <InputField content={content} updateField={updateField} label="Title Line 1" section="hero" field="title_line1" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Title Line 2 (italic)" section="hero" field="title_line2" />
+                        <InputField content={content} updateField={updateField} label="Title Line 2 (italic)" section="hero" field="title_line2" />
                       </div>
                     </div>
-                    <InputField label="Description" section="hero" field="description" textarea />
-                    <InputField label="Hero Image URL" section="hero" field="hero_image_url" />
+                    <InputField content={content} updateField={updateField} label="Description" section="hero" field="description" textarea />
+                    <InputField content={content} updateField={updateField} label="Hero Image URL" section="hero" field="hero_image_url" />
                     <div className="row">
                       <div className="col-md-4">
-                        <InputField label="Corner Badge Value" section="hero" field="corner_badge_value" />
+                        <InputField content={content} updateField={updateField} label="Corner Badge Value" section="hero" field="corner_badge_value" />
                       </div>
                       <div className="col-md-4">
-                        <InputField label="Corner Badge Label" section="hero" field="corner_badge_label" />
+                        <InputField content={content} updateField={updateField} label="Corner Badge Label" section="hero" field="corner_badge_label" />
                       </div>
                       <div className="col-md-4">
-                        <InputField label="Top Badge Text" section="hero" field="top_badge_text" />
+                        <InputField content={content} updateField={updateField} label="Top Badge Text" section="hero" field="top_badge_text" />
                       </div>
                     </div>
 
@@ -316,28 +323,28 @@ export default function ManageContentPage() {
             {/* ─── About Section ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="about" label="About Section" icon="bi-info-circle" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="about" label="About Section" icon="bi-info-circle" />
                 {openSections.about && (
                   <div className="p-3">
-                    <InputField label="Section Label" section="about" field="section_label" />
+                    <InputField content={content} updateField={updateField} label="Section Label" section="about" field="section_label" />
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Heading" section="about" field="heading" />
+                        <InputField content={content} updateField={updateField} label="Heading" section="about" field="heading" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Heading Accent (colored)" section="about" field="heading_accent" />
+                        <InputField content={content} updateField={updateField} label="Heading Accent (colored)" section="about" field="heading_accent" />
                       </div>
                     </div>
-                    <InputField label="Description" section="about" field="description" textarea />
+                    <InputField content={content} updateField={updateField} label="Description" section="about" field="description" textarea />
                     <div className="row">
                       <div className="col-md-4">
-                        <InputField label="Experience Years" section="about" field="experience_years" />
+                        <InputField content={content} updateField={updateField} label="Experience Years" section="about" field="experience_years" />
                       </div>
                       <div className="col-md-4">
-                        <InputField label="Experience Label" section="about" field="experience_label" />
+                        <InputField content={content} updateField={updateField} label="Experience Label" section="about" field="experience_label" />
                       </div>
                       <div className="col-md-4">
-                        <InputField label="About Image URL" section="about" field="about_image_url" />
+                        <InputField content={content} updateField={updateField} label="About Image URL" section="about" field="about_image_url" />
                       </div>
                     </div>
 
@@ -387,19 +394,19 @@ export default function ManageContentPage() {
             {/* ─── Services Header ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="services_header" label="Services Header" icon="bi-grid" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="services_header" label="Services Header" icon="bi-grid" />
                 {openSections.services_header && (
                   <div className="p-3">
-                    <InputField label="Section Label" section="services_header" field="section_label" />
+                    <InputField content={content} updateField={updateField} label="Section Label" section="services_header" field="section_label" />
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Heading" section="services_header" field="heading" />
+                        <InputField content={content} updateField={updateField} label="Heading" section="services_header" field="heading" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Heading Accent (colored)" section="services_header" field="heading_accent" />
+                        <InputField content={content} updateField={updateField} label="Heading Accent (colored)" section="services_header" field="heading_accent" />
                       </div>
                     </div>
-                    <InputField label="Subtext" section="services_header" field="subtext" textarea />
+                    <InputField content={content} updateField={updateField} label="Subtext" section="services_header" field="subtext" textarea />
                   </div>
                 )}
               </div>
@@ -408,19 +415,19 @@ export default function ManageContentPage() {
             {/* ─── Doctors Header ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="doctors_header" label="Doctors Header" icon="bi-person-badge" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="doctors_header" label="Doctors Header" icon="bi-person-badge" />
                 {openSections.doctors_header && (
                   <div className="p-3">
-                    <InputField label="Section Label" section="doctors_header" field="section_label" />
+                    <InputField content={content} updateField={updateField} label="Section Label" section="doctors_header" field="section_label" />
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Heading" section="doctors_header" field="heading" />
+                        <InputField content={content} updateField={updateField} label="Heading" section="doctors_header" field="heading" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Heading Accent (colored)" section="doctors_header" field="heading_accent" />
+                        <InputField content={content} updateField={updateField} label="Heading Accent (colored)" section="doctors_header" field="heading_accent" />
                       </div>
                     </div>
-                    <InputField label="Subtext" section="doctors_header" field="subtext" textarea />
+                    <InputField content={content} updateField={updateField} label="Subtext" section="doctors_header" field="subtext" textarea />
                   </div>
                 )}
               </div>
@@ -429,16 +436,16 @@ export default function ManageContentPage() {
             {/* ─── Testimonials ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="testimonials" label="Testimonials" icon="bi-chat-quote" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="testimonials" label="Testimonials" icon="bi-chat-quote" />
                 {openSections.testimonials && (
                   <div className="p-3">
-                    <InputField label="Section Label" section="testimonials" field="section_label" />
+                    <InputField content={content} updateField={updateField} label="Section Label" section="testimonials" field="section_label" />
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Heading" section="testimonials" field="heading" />
+                        <InputField content={content} updateField={updateField} label="Heading" section="testimonials" field="heading" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Heading Accent (colored)" section="testimonials" field="heading_accent" />
+                        <InputField content={content} updateField={updateField} label="Heading Accent (colored)" section="testimonials" field="heading_accent" />
                       </div>
                     </div>
 
@@ -490,18 +497,18 @@ export default function ManageContentPage() {
             {/* ─── CTA ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="cta" label="Call to Action" icon="bi-megaphone" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="cta" label="Call to Action" icon="bi-megaphone" />
                 {openSections.cta && (
                   <div className="p-3">
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Heading Line 1" section="cta" field="heading_line1" />
+                        <InputField content={content} updateField={updateField} label="Heading Line 1" section="cta" field="heading_line1" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Heading Line 2" section="cta" field="heading_line2" />
+                        <InputField content={content} updateField={updateField} label="Heading Line 2" section="cta" field="heading_line2" />
                       </div>
                     </div>
-                    <InputField label="Description" section="cta" field="description" textarea />
+                    <InputField content={content} updateField={updateField} label="Description" section="cta" field="description" textarea />
                   </div>
                 )}
               </div>
@@ -510,19 +517,19 @@ export default function ManageContentPage() {
             {/* ─── Footer ─── */}
             <div className="card border-0 shadow-sm" style={{ borderRadius: "15px" }}>
               <div className="card-body p-0">
-                <SectionHeader sectionKey="footer" label="Footer" icon="bi-layout-text-sidebar-reverse" />
+                <SectionHeader openSections={openSections} toggleSection={toggleSection} sectionKey="footer" label="Footer" icon="bi-layout-text-sidebar-reverse" />
                 {openSections.footer && (
                   <div className="p-3">
                     <div className="row">
                       <div className="col-md-6">
-                        <InputField label="Brand Name" section="footer" field="brand_name" />
+                        <InputField content={content} updateField={updateField} label="Brand Name" section="footer" field="brand_name" />
                       </div>
                       <div className="col-md-6">
-                        <InputField label="Tagline" section="footer" field="tagline" />
+                        <InputField content={content} updateField={updateField} label="Tagline" section="footer" field="tagline" />
                       </div>
                     </div>
-                    <InputField label="Description" section="footer" field="description" textarea />
-                    <InputField label="Copyright" section="footer" field="copyright" />
+                    <InputField content={content} updateField={updateField} label="Description" section="footer" field="description" textarea />
+                    <InputField content={content} updateField={updateField} label="Copyright" section="footer" field="copyright" />
 
                     <hr className="my-3" />
                     <label className="form-label fw-bold">Clinic Locations</label>
