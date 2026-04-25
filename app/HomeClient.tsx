@@ -242,14 +242,8 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
   const { isScrolled, activeNavItem, setManualNav } = useScrollState();
   const doctors = initialDoctors;
   const services = initialServices;
-  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
-
   // Detect if database connection failed
   const isDbDown = !siteContent && initialDoctors.length === 0 && initialServices.length === 0;
-
-  useEffect(() => {
-    if (isDbDown) setShowMaintenanceDialog(true);
-  }, [isDbDown]);
 
   // Merge DB content with defaults (DB takes priority)
   const topbar = { ...DEFAULT_TOPBAR, ...siteContent?.topbar };
@@ -315,151 +309,201 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
         accentColor={THEME_CONFIG.accent}
       />
 
-      {/* ─── Maintenance / Technical Issue Dialog ─── */}
-      {showMaintenanceDialog && (
-        <>
+      {/* ─── Full-screen Maintenance Page when DB is down ─── */}
+      {isDbDown ? (
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(160deg, #0D1F1C 0%, #1A3A33 50%, #0D1F1C 100%)",
+            padding: "2rem 1.5rem",
+            textAlign: "center",
+          }}
+        >
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes fadeSlideUp {
+              from { opacity: 0; transform: translateY(30px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+          `}} />
+
+          {/* Animated Icon */}
           <div
             style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(13,31,28,0.6)",
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
-              zIndex: 9998,
-            }}
-            onClick={() => setShowMaintenanceDialog(false)}
-          />
-          <div
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 9999,
-              width: "90%",
-              maxWidth: "480px",
-              background: "#fff",
-              borderRadius: "20px",
-              padding: "2.5rem 2rem",
-              boxShadow: "0 25px 80px rgba(0,0,0,0.25)",
-              textAlign: "center",
-              animation: "fadeSlideIn 0.4s ease",
+              width: "100px",
+              height: "100px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))",
+              border: "2px solid rgba(201,168,76,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "2rem",
+              animation: "fadeSlideUp 0.6s ease, pulse 3s ease-in-out infinite",
             }}
           >
-            <style dangerouslySetInnerHTML={{ __html: `
-              @keyframes fadeSlideIn {
-                from { opacity: 0; transform: translate(-50%, -45%); }
-                to { opacity: 1; transform: translate(-50%, -50%); }
-              }
-            `}} />
+            <i className="bi bi-tools" style={{ fontSize: "2.5rem", color: "#C9A84C" }}></i>
+          </div>
+
+          {/* Brand */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "1.5rem",
+              animation: "fadeSlideUp 0.6s ease 0.1s both",
+            }}
+          >
             <div
               style={{
-                width: "70px",
-                height: "70px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #FFF3CD, #FFEAA7)",
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                background: "linear-gradient(135deg, #086351, #0a8b6f)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                margin: "0 auto 1.25rem",
               }}
             >
-              <i className="bi bi-tools" style={{ fontSize: "1.8rem", color: "#B8860B" }}></i>
+              <i className="bi bi-shield-check" style={{ color: "#fff", fontSize: "1rem" }}></i>
             </div>
-            <h4
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: "1.15rem", fontFamily: "'Playfair Display', serif" }}>
+              Alaya Dental Care
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 700,
+              color: "#fff",
+              fontSize: "clamp(1.6rem, 4vw, 2.4rem)",
+              marginBottom: "1rem",
+              lineHeight: 1.3,
+              animation: "fadeSlideUp 0.6s ease 0.2s both",
+            }}
+          >
+            We&apos;ll Be Back Soon
+          </h1>
+
+          {/* Description */}
+          <p
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "clamp(0.9rem, 2.5vw, 1.05rem)",
+              lineHeight: 1.8,
+              maxWidth: "480px",
+              marginBottom: "2.5rem",
+              animation: "fadeSlideUp 0.6s ease 0.3s both",
+            }}
+          >
+            Our website is currently undergoing maintenance. We apologize for the inconvenience and will be back shortly. In the meantime, feel free to reach out to us directly.
+          </p>
+
+          {/* Call Us & WhatsApp Buttons */}
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              animation: "fadeSlideUp 0.6s ease 0.4s both",
+            }}
+          >
+            <a
+              href="tel:+918848659365"
               style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 700,
-                color: "#1A2E2A",
-                marginBottom: "0.75rem",
-                fontSize: "1.35rem",
-              }}
-            >
-              Under Maintenance
-            </h4>
-            <p
-              style={{
-                color: "#6B7B78",
+                background: THEME_CONFIG.primary,
+                color: "#fff",
+                border: "none",
+                borderRadius: "12px",
+                padding: "0.85rem 2rem",
                 fontSize: "0.95rem",
-                lineHeight: 1.7,
-                marginBottom: "1.5rem",
+                fontWeight: 600,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                transition: "all 0.3s ease",
+                boxShadow: "0 4px 15px rgba(8,99,81,0.3)",
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(8,99,81,0.4)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 15px rgba(8,99,81,0.3)"; }}
             >
-              We are currently experiencing a technical issue. Our team is working to resolve it as quickly as possible. Please check back shortly.
-            </p>
-            <div
+              <i className="bi bi-telephone-fill"></i> Call Us
+            </a>
+            <a
+              href="https://wa.me/918848659365"
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                display: "flex",
-                gap: "0.75rem",
-                justifyContent: "center",
-                flexWrap: "wrap",
+                background: "#25D366",
+                color: "#fff",
+                border: "none",
+                borderRadius: "12px",
+                padding: "0.85rem 2rem",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                transition: "all 0.3s ease",
+                boxShadow: "0 4px 15px rgba(37,211,102,0.3)",
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(37,211,102,0.4)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 15px rgba(37,211,102,0.3)"; }}
             >
-              <button
-                onClick={() => setShowMaintenanceDialog(false)}
-                style={{
-                  background: THEME_CONFIG.primary,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "10px",
-                  padding: "0.65rem 1.8rem",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(8,99,81,0.3)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-              >
-                Continue Browsing
-              </button>
-              <a
-                href={`tel:${topbar.phone.replace(/\s/g, '')}`}
-                style={{
-                  background: "transparent",
-                  color: THEME_CONFIG.primary,
-                  border: `1.5px solid ${THEME_CONFIG.primary}`,
-                  borderRadius: "10px",
-                  padding: "0.65rem 1.8rem",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(8,99,81,0.06)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-              >
-                <i className="bi bi-telephone-fill"></i> Call Us
-              </a>
-            </div>
+              <i className="bi bi-whatsapp"></i> WhatsApp
+            </a>
+          </div>
+
+          {/* Subtle footer info */}
+          <p
+            style={{
+              color: "rgba(255,255,255,0.3)",
+              fontSize: "0.78rem",
+              marginTop: "3rem",
+              animation: "fadeSlideUp 0.6s ease 0.5s both",
+            }}
+          >
+            +91 884 865 9365 &nbsp;&bull;&nbsp; alayadentalcare@gmail.com
+          </p>
+        </div>
+      ) : (
+        <>
+          <TopBar content={topbar} />
+          <Navigation
+            isScrolled={isScrolled}
+            activeNavItem={activeNavItem}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            setManualNav={setManualNav}
+            brandName={footerContent.brand_name}
+            tagline={footerContent.tagline}
+          />
+
+          {/* Wrapper forces all sections to stay within screen width */}
+          <div style={{ overflowX: "hidden", width: "100%" }}>
+            <HeroSection content={hero} />
+            <AboutSection content={about} />
+            <ServicesSection services={services} loading={false} content={servicesHeader} />
+            <DoctorsSection doctors={doctors} loading={false} content={doctorsHeader} />
+            <TestimonialsSection content={testimonials} />
+            <CTASection content={cta} />
+            <Footer content={footerContent} />
           </div>
         </>
       )}
-
-      <TopBar content={topbar} />
-      <Navigation
-        isScrolled={isScrolled}
-        activeNavItem={activeNavItem}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        setManualNav={setManualNav}
-        brandName={footerContent.brand_name}
-        tagline={footerContent.tagline}
-      />
-
-      {/* Wrapper forces all sections to stay within screen width */}
-      <div style={{ overflowX: "hidden", width: "100%" }}>
-        <HeroSection content={hero} />
-        <AboutSection content={about} />
-        <ServicesSection services={services} loading={false} content={servicesHeader} />
-        <DoctorsSection doctors={doctors} loading={false} content={doctorsHeader} />
-        <TestimonialsSection content={testimonials} />
-        <CTASection content={cta} />
-        <Footer content={footerContent} />
-      </div>
     </main>
   );
 }
