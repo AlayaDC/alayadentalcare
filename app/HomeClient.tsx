@@ -61,6 +61,7 @@ const NAV_ITEMS = ["home", "about", "services", "doctors", "contact"] as const;
 const DEFAULT_TOPBAR = {
   working_hours: "Mon – Sat: 10:00 AM – 8:00 PM",
   phone: "+91 8848659365",
+  whatsapp_number: "918113003220",
   social_links: ["facebook", "instagram", "whatsapp"],
 };
 
@@ -504,6 +505,43 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
           </div>
         </>
       )}
+
+      {/* Floating WhatsApp Button */}
+      {!isDbDown && (
+        <a
+          href={`https://wa.me/${topbar.whatsapp_number}?text=Hi%2C%20I%20would%20like%20to%20book%20an%20appointment`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Chat on WhatsApp"
+          className="whatsapp-float"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            zIndex: 9999,
+            width: "60px",
+            height: "60px",
+            borderRadius: "50%",
+            background: "#25D366",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 20px rgba(37, 211, 102, 0.4)",
+            transition: "all 0.3s ease",
+            textDecoration: "none",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.1)";
+            e.currentTarget.style.boxShadow = "0 6px 28px rgba(37, 211, 102, 0.55)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 4px 20px rgba(37, 211, 102, 0.4)";
+          }}
+        >
+          <i className="bi bi-whatsapp text-white" style={{ fontSize: "1.7rem" }}></i>
+        </a>
+      )}
     </main>
   );
 }
@@ -600,6 +638,12 @@ const GlobalStyles = ({
       85%  { opacity:1; transform: translateY(0); }
       100% { opacity:0; transform: translateY(-8px); }
     }
+    @keyframes whatsapp-pulse {
+      0%   { box-shadow: 0 4px 20px rgba(37,211,102,0.4); }
+      50%  { box-shadow: 0 4px 20px rgba(37,211,102,0.4), 0 0 0 12px rgba(37,211,102,0.15); }
+      100% { box-shadow: 0 4px 20px rgba(37,211,102,0.4), 0 0 0 20px rgba(37,211,102,0); }
+    }
+    .whatsapp-float { animation: whatsapp-pulse 2s ease infinite; }
 
     /* ── Typography helpers ── */
     .font-serif { font-family: 'Playfair Display', Georgia, serif !important; }
@@ -1243,15 +1287,16 @@ const GlobalStyles = ({
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 const TopBar = ({ content }: { content: typeof DEFAULT_TOPBAR }) => (
   <div
-    className="text-white py-2 d-none d-lg-block position-relative overflow-hidden"
+    className="text-white py-1 py-lg-2 position-relative overflow-hidden"
     style={{
       background: `linear-gradient(270deg, ${THEME_CONFIG.primary}, ${THEME_CONFIG.charcoal}, ${THEME_CONFIG.primary})`,
       backgroundSize: "300% 100%",
       animation: "gradient-shift 8s ease infinite",
     }}
   >
-    <div className="container">
-      <div className="d-flex justify-content-between align-items-center">
+    <div className="container px-3">
+      {/* Desktop layout */}
+      <div className="d-none d-lg-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-4">
           <span className="d-flex align-items-center gap-2">
             <i className="bi bi-clock-fill" style={{ color: THEME_CONFIG.gold, fontSize: "0.75rem" }}></i>
@@ -1280,6 +1325,19 @@ const TopBar = ({ content }: { content: typeof DEFAULT_TOPBAR }) => (
             </a>
           ))}
         </div>
+      </div>
+      {/* Mobile layout */}
+      <div className="d-flex d-lg-none justify-content-between align-items-center">
+        <span className="d-flex align-items-center gap-2">
+          <i className="bi bi-clock-fill" style={{ color: THEME_CONFIG.gold, fontSize: "0.65rem" }}></i>
+          <small className="fw-semibold" style={{ fontSize: "0.7rem" }}>
+            {content.working_hours}
+          </small>
+        </span>
+        <a href={`tel:${content.phone.replace(/\s+/g, "")}`} className="d-flex align-items-center gap-1 text-white text-decoration-none">
+          <i className="bi bi-telephone-fill" style={{ color: THEME_CONFIG.gold, fontSize: "0.65rem" }}></i>
+          <small className="fw-semibold" style={{ fontSize: "0.7rem" }}>{content.phone}</small>
+        </a>
       </div>
     </div>
   </div>

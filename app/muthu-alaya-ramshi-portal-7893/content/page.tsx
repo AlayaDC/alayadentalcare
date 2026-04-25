@@ -241,6 +241,7 @@ export default function ManageContentPage() {
                   <div className="p-3">
                     <InputField label="Working Hours" section="topbar" field="working_hours" />
                     <InputField label="Phone Number" section="topbar" field="phone" />
+                    <InputField label="WhatsApp Number (e.g. 918113003220)" section="topbar" field="whatsapp_number" />
                   </div>
                 )}
               </div>
