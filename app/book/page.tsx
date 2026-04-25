@@ -138,7 +138,7 @@ export default function BookAppointment() {
     setIsLoading(true);
     try {
       // 1. Send to Database API
-      const dbResponse = await fetch("/api/admin/appointments", {
+      const dbResponse = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

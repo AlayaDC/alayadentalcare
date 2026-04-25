@@ -217,8 +217,8 @@ export default function ManageAppointmentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
       });
+      const result = await response.json();
       if (response.ok) {
-        const result = await response.json();
         // If check-in returned a patient_id, store it on the appointment locally
         if (newStatus === 'Check-in' && result.patient_id) {
           setAppointments(prev => prev.map(app =>
@@ -227,6 +227,8 @@ export default function ManageAppointmentsPage() {
         } else {
           fetchAppointments(false);
         }
+      } else {
+        alert("Failed to update: " + (result.error || "Unknown error"));
       }
     } catch (error) {
       alert("Network error.");
@@ -242,6 +244,7 @@ export default function ManageAppointmentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newApptForm, countryCode: "+91" }), // Defaulting country code for manual entry
       });
+      const result = await response.json();
       if (response.ok) {
         setShowAddModal(false);
         setNewApptForm({ name: "", phone: "", location: "chettiyamkinar", service: "General Consultation", date: "", time: "" });
@@ -250,7 +253,7 @@ export default function ManageAppointmentsPage() {
         setShowPatientDropdown(false);
         fetchAppointments(false); // Refresh list
       } else {
-        alert("Failed to save appointment.");
+        alert("Failed to save appointment: " + (result.error || "Unknown error"));
       }
     } catch (error) {
       alert("System error saving appointment.");

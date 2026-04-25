@@ -79,9 +79,13 @@ export async function POST(request: Request) {
       }])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[appointments POST] Supabase error:', error);
+      return NextResponse.json({ error: error.message || 'Database error' }, { status: 500 });
+    }
     return NextResponse.json({ success: true, data });
-  } catch {
+  } catch (err) {
+    console.error('[appointments POST] Unexpected error:', err);
     return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 });
   }
 }
