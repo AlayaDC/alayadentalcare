@@ -59,6 +59,28 @@ export async function getServices(limit = 50) {
   }
 }
 
+export async function getSiteContent() {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('content')
+      .eq('id', 1)
+      .single();
+
+    if (error) {
+      console.error('[getSiteContent] Supabase error:', error.message);
+      return null;
+    }
+    return data?.content || null;
+  } catch (err) {
+    console.error('[getSiteContent] Unexpected error:', err);
+    return null;
+  }
+}
+
 export async function getServiceBySlug(slug: string) {
   try {
     const supabase = getSupabase();

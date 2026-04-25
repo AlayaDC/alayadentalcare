@@ -42,6 +42,9 @@ interface Testimonial {
   role: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SiteContent = Record<string, any>;
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const THEME_CONFIG = {
   primary: "#086351",
@@ -54,52 +57,87 @@ const THEME_CONFIG = {
 
 const NAV_ITEMS = ["home", "about", "services", "doctors", "contact"] as const;
 
-const TESTIMONIALS: Testimonial[] = [
-  {
-    text: "The team at Alaya Dental made me feel so comfortable. I used to fear dentist visits, but now I actually look forward to them! The results are amazing.",
-    author: "Sarah Mitchell",
-    role: "Marketing Manager",
-  },
-  {
-    text: "Best dental experience ever! The staff is friendly, the facility is spotless, and my smile has never looked better. Highly recommend to everyone!",
-    author: "James Rodriguez",
-    role: "Business Owner",
-  },
-  {
-    text: "I brought my whole family here and we all love it. The doctors are patient, especially with my kids. It's rare to find such quality care combined with genuine warmth.",
-    author: "Emily Chen",
-    role: "Teacher",
-  },
-];
+// ─── Default Content (fallbacks if DB content is not available) ──────────────
+const DEFAULT_TOPBAR = {
+  working_hours: "Mon – Sat: 10:00 AM – 8:00 PM",
+  phone: "+91 8848659365",
+  social_links: ["facebook", "instagram", "whatsapp"],
+};
 
-const STATS = [
-  { value: "10+", label: "Years Experience", icon: "bi-award-fill" },
-  { value: "50K+", label: "Happy Patients", icon: "bi-emoji-smile-fill" },
-  { value: "95%", label: "Success Rate", icon: "bi-graph-up-arrow" },
-];
+const DEFAULT_HERO = {
+  badge_text: "Kerala's #1 Dental Studio",
+  title_line1: "Your Smile,",
+  title_line2: "Reimagined.",
+  description: "Experience world-class dental care with cutting-edge technology and compassionate experts who treat you like family.",
+  hero_image_url: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=800&auto=format&fit=crop",
+  corner_badge_value: "100%",
+  corner_badge_label: "Sterilized & Safe",
+  top_badge_text: "Trusted by 10K+ Families",
+  stats: [
+    { value: "10+", label: "Years Experience" },
+    { value: "50K+", label: "Happy Patients" },
+    { value: "95%", label: "Success Rate" },
+  ],
+};
 
-const ABOUT_FEATURES = [
-  {
-    icon: "bi-heart-pulse-fill",
-    title: "Advanced Technology",
-    description: "Latest equipment for precise treatments",
-  },
-  {
-    icon: "bi-people-fill",
-    title: "Expert Team",
-    description: "Certified specialists with 15+ years",
-  },
-  {
-    icon: "bi-shield-fill-check",
-    title: "100% Sterilized",
-    description: "Highest hygiene standards maintained",
-  },
-  {
-    icon: "bi-clock-fill",
-    title: "Flexible Hours",
-    description: "Evening & weekend appointments",
-  },
-];
+const DEFAULT_ABOUT = {
+  section_label: "About Alaya Dental",
+  heading: "Excellence in Dental Care",
+  heading_accent: "Since 2009",
+  description: "We're not just a dental clinic—we're your partners in achieving and maintaining the perfect smile. With state-of-the-art technology and a team of passionate professionals, we make dental care comfortable, efficient, and effective.",
+  experience_years: "15+",
+  experience_label: "Years of\nExcellence",
+  about_image_url: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop",
+  features: [
+    { icon: "bi-heart-pulse-fill", title: "Advanced Technology", description: "Latest equipment for precise treatments" },
+    { icon: "bi-people-fill", title: "Expert Team", description: "Certified specialists with 15+ years" },
+    { icon: "bi-shield-fill-check", title: "100% Sterilized", description: "Highest hygiene standards maintained" },
+    { icon: "bi-clock-fill", title: "Flexible Hours", description: "Evening & weekend appointments" },
+  ],
+};
+
+const DEFAULT_SERVICES_HEADER = {
+  section_label: "Our Services",
+  heading: "Comprehensive",
+  heading_accent: "Dental Solutions",
+  subtext: "From routine checkups to advanced treatments, we've got your smile covered",
+};
+
+const DEFAULT_DOCTORS_HEADER = {
+  section_label: "Meet Our Team",
+  heading: "Expert",
+  heading_accent: "Dental Professionals",
+  subtext: "Certified specialists dedicated to your oral health and beautiful smile",
+};
+
+const DEFAULT_TESTIMONIALS = {
+  section_label: "Patient Stories",
+  heading: "What Our",
+  heading_accent: "Patients Say",
+  items: [
+    { text: "The team at Alaya Dental made me feel so comfortable. I used to fear dentist visits, but now I actually look forward to them! The results are amazing.", author: "Sarah Mitchell", role: "Marketing Manager" },
+    { text: "Best dental experience ever! The staff is friendly, the facility is spotless, and my smile has never looked better. Highly recommend to everyone!", author: "James Rodriguez", role: "Business Owner" },
+    { text: "I brought my whole family here and we all love it. The doctors are patient, especially with my kids. It's rare to find such quality care combined with genuine warmth.", author: "Emily Chen", role: "Teacher" },
+  ],
+};
+
+const DEFAULT_CTA = {
+  heading_line1: "Ready to Transform",
+  heading_line2: "Your Smile?",
+  description: "Book your appointment today and experience the Alaya difference. Your journey to a healthier, brighter smile starts here.",
+};
+
+const DEFAULT_FOOTER = {
+  brand_name: "Alaya Dental Care",
+  tagline: "Premium Dental Studio",
+  description: "Making the world smile brighter, one tooth at a time. Experience dental care that combines cutting-edge technology with genuine compassion.",
+  social_links: ["facebook", "instagram", "whatsapp", "linkedin"],
+  clinics: [
+    { title: "Chettiyamkinar Clinic", address: "Kozhichena Road, Kuttippala, Chettiyamkinar, Kerala 676501", phone: "+91 8848659365", email: "alayadentalcare@gmail.com", hours: "Mon–Sat: 10AM – 8PM" },
+    { title: "Kurukathani Clinic", address: "Kurukathani, Perumanna Klari Gramapanchayat, Kerala 676551", phone: "+91 8848659365", email: "alayadentalcare@gmail.com", hours: "Mon–Sat: 10AM – 8PM" },
+  ],
+  copyright: "© 2026 Alaya Dental Care. All rights reserved.",
+};
 
 // ─── Custom Hooks ─────────────────────────────────────────────────────────────
 const useScrollState = () => {
@@ -197,12 +235,23 @@ const useSupabaseData = <T,>(table: string, limit: number) => {
 interface HomeClientProps {
   initialDoctors: Doctor[];
   initialServices: Service[];
+  siteContent: SiteContent | null;
 }
 
-export default function HomeClient({ initialDoctors, initialServices }: HomeClientProps) {
+export default function HomeClient({ initialDoctors, initialServices, siteContent }: HomeClientProps) {
   const { isScrolled, activeNavItem, setManualNav } = useScrollState();
   const doctors = initialDoctors;
   const services = initialServices;
+
+  // Merge DB content with defaults (DB takes priority)
+  const topbar = { ...DEFAULT_TOPBAR, ...siteContent?.topbar };
+  const hero = { ...DEFAULT_HERO, ...siteContent?.hero };
+  const about = { ...DEFAULT_ABOUT, ...siteContent?.about };
+  const servicesHeader = { ...DEFAULT_SERVICES_HEADER, ...siteContent?.services_header };
+  const doctorsHeader = { ...DEFAULT_DOCTORS_HEADER, ...siteContent?.doctors_header };
+  const testimonials = { ...DEFAULT_TESTIMONIALS, ...siteContent?.testimonials };
+  const cta = { ...DEFAULT_CTA, ...siteContent?.cta };
+  const footerContent = { ...DEFAULT_FOOTER, ...siteContent?.footer };
 
   useEffect(() => {
     // @ts-expect-error bootstrap JS bundle has no type declarations
@@ -257,25 +306,26 @@ export default function HomeClient({ initialDoctors, initialServices }: HomeClie
         themeColor={THEME_CONFIG.primary}
         accentColor={THEME_CONFIG.accent}
       />
-      <TopBar />
+      <TopBar content={topbar} />
       <Navigation
         isScrolled={isScrolled}
         activeNavItem={activeNavItem}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         setManualNav={setManualNav}
+        brandName={footerContent.brand_name}
+        tagline={footerContent.tagline}
       />
-      
-      {/* 🚀 THE FIX: This wrapper forces all sections to stay strictly within the screen width, 
-          cutting off the white gap, without breaking the sticky navbar above it! */}
+
+      {/* Wrapper forces all sections to stay within screen width */}
       <div style={{ overflowX: "hidden", width: "100%" }}>
-        <HeroSection />
-        <AboutSection />
-        <ServicesSection services={services} loading={false} />
-        <DoctorsSection doctors={doctors} loading={false} />
-        <TestimonialsSection />
-        <CTASection />
-        <Footer />
+        <HeroSection content={hero} />
+        <AboutSection content={about} />
+        <ServicesSection services={services} loading={false} content={servicesHeader} />
+        <DoctorsSection doctors={doctors} loading={false} content={doctorsHeader} />
+        <TestimonialsSection content={testimonials} />
+        <CTASection content={cta} />
+        <Footer content={footerContent} />
       </div>
     </main>
   );
@@ -1014,7 +1064,7 @@ const GlobalStyles = ({
 );
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────
-const TopBar = () => (
+const TopBar = ({ content }: { content: typeof DEFAULT_TOPBAR }) => (
   <div
     className="text-white py-2 d-none d-lg-block position-relative overflow-hidden"
     style={{
@@ -1029,17 +1079,17 @@ const TopBar = () => (
           <span className="d-flex align-items-center gap-2">
             <i className="bi bi-clock-fill" style={{ color: THEME_CONFIG.gold, fontSize: "0.75rem" }}></i>
             <small className="fw-semibold" style={{ fontSize: "0.78rem", letterSpacing: "0.3px" }}>
-              Mon – Sat: 10:00 AM – 8:00 PM
+              {content.working_hours}
             </small>
           </span>
           <span className="d-flex align-items-center gap-2">
             <i className="bi bi-telephone-fill" style={{ color: THEME_CONFIG.gold, fontSize: "0.75rem" }}></i>
-            <small className="fw-semibold" style={{ fontSize: "0.78rem" }}>+91 8848659365</small>
+            <small className="fw-semibold" style={{ fontSize: "0.78rem" }}>{content.phone}</small>
           </span>
         </div>
         <div className="d-flex gap-3 align-items-center">
           <span style={{ fontSize: "0.7rem", letterSpacing: "1.5px", textTransform: "uppercase", opacity: 0.5 }}>Follow</span>
-          {(["facebook", "instagram", "whatsapp"] as const).map((social) => (
+          {(content.social_links || []).map((social: string) => (
             <a
               key={social}
               href="#"
@@ -1065,6 +1115,8 @@ interface NavigationProps {
   onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void;
   onMouseLeave: (e: React.MouseEvent<HTMLElement>) => void;
   setManualNav: (item: (typeof NAV_ITEMS)[number]) => void;
+  brandName: string;
+  tagline: string;
 }
 
 const Navigation = ({
@@ -1073,6 +1125,8 @@ const Navigation = ({
   onMouseEnter,
   onMouseLeave,
   setManualNav,
+  brandName,
+  tagline,
 }: NavigationProps) => {
   const handleNavClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -1158,7 +1212,7 @@ const Navigation = ({
                 lineHeight: 1.1,
               }}
             >
-              Alaya Dental Care
+              {brandName}
             </div>
             <div
               style={{
@@ -1169,7 +1223,7 @@ const Navigation = ({
                 fontWeight: 600,
               }}
             >
-              Premium Dental Studio
+              {tagline}
             </div>
           </div>
         </Link>
@@ -1224,7 +1278,7 @@ const Navigation = ({
 };
 
 // ─── Hero Section ─────────────────────────────────────────────────────────────
-const HeroSection = () => (
+const HeroSection = ({ content }: { content: typeof DEFAULT_HERO }) => (
   <section className="hero-section">
     {/* Grid bg */}
     <div className="hero-grid-bg" />
@@ -1260,12 +1314,12 @@ const HeroSection = () => (
         <div className="col-lg-6" data-aos="fade-right" data-aos-offset="50">
           <div className="hero-badge">
             <i className="bi bi-award-fill" style={{ color: THEME_CONFIG.gold }}></i>
-            Kerala&apos;s #1 Dental Studio
+            {content.badge_text}
           </div>
 
           <h1 className="hero-title">
-            Your Smile, <br />
-            <em>Reimagined.</em>
+            {content.title_line1} <br />
+            <em>{content.title_line2}</em>
           </h1>
 
           <div className="hero-divider" />
@@ -1279,8 +1333,7 @@ const HeroSection = () => (
               marginBottom: "2.5rem",
             }}
           >
-            Experience world-class dental care with cutting-edge technology and
-            compassionate experts who treat you like family.
+            {content.description}
           </p>
 
           <div className="d-flex flex-wrap gap-3 mb-5">
@@ -1296,7 +1349,7 @@ const HeroSection = () => (
 
           {/* Stats */}
           <div className="d-flex flex-wrap gap-4">
-            {STATS.map((stat, idx) => (
+            {(content.stats || []).map((stat: { value: string; label: string }, idx: number) => (
               <div className="hero-stat-card" key={idx}>
                 <div className="hero-stat-value">{stat.value}</div>
                 <div className="hero-stat-label">{stat.label}</div>
@@ -1314,7 +1367,7 @@ const HeroSection = () => (
           <div className="hero-image-wrap">
             <div className="hero-image-frame">
               <img
-                src="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=800&auto=format&fit=crop"
+                src={content.hero_image_url}
                 alt="Dental Care"
                 loading="eager"
               />
@@ -1327,8 +1380,8 @@ const HeroSection = () => (
               data-aos-delay="300"
               style={{ bottom: 28, left: -20 }}
             >
-              <div style={{ fontSize: "1.4rem", fontFamily: "'Playfair Display', serif" }}>100%</div>
-              <div style={{ fontSize: "0.65rem", letterSpacing: "0.5px", marginTop: "2px" }}>Sterilized & Safe</div>
+              <div style={{ fontSize: "1.4rem", fontFamily: "'Playfair Display', serif" }}>{content.corner_badge_value}</div>
+              <div style={{ fontSize: "0.65rem", letterSpacing: "0.5px", marginTop: "2px" }}>{content.corner_badge_label}</div>
             </div>
 
             {/* Top right badge */}
@@ -1361,7 +1414,7 @@ const HeroSection = () => (
                     marginTop: "2px",
                   }}
                 >
-                  Trusted by 10K+ Families
+                  {content.top_badge_text}
                 </div>
               </div>
             </div>
@@ -1376,7 +1429,7 @@ const HeroSection = () => (
 );
 
 // ─── About Section ────────────────────────────────────────────────────────────
-const AboutSection = () => (
+const AboutSection = ({ content }: { content: typeof DEFAULT_ABOUT }) => (
   <section id="about" className="about-section section-py">
     <div className="container">
       <div className="row align-items-center g-5">
@@ -1390,21 +1443,21 @@ const AboutSection = () => (
           <div className="about-image-container pb-4 pb-lg-0">
             <div className="about-image-main">
               <img
-                src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop"
+                src={content.about_image_url}
                 alt="Modern Clinic"
                 loading="lazy"
               />
             </div>
             <div className="about-exp-badge">
-              <span className="number">15+</span>
-              <span className="label">Years of<br />Excellence</span>
+              <span className="number">{content.experience_years}</span>
+              <span className="label">{(content.experience_label || "Years of\nExcellence").split('\n').map((line: string, i: number) => <span key={i}>{i > 0 && <br />}{line}</span>)}</span>
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="col-lg-6" data-aos="fade-left" data-aos-offset="50">
-          <div className="about-section-label">About Alaya Dental</div>
+          <div className="about-section-label">{content.section_label}</div>
           <h2
             className="font-serif mb-4"
             style={{
@@ -1414,8 +1467,8 @@ const AboutSection = () => (
               color: THEME_CONFIG.charcoal,
             }}
           >
-            Excellence in Dental Care{" "}
-            <span className="gradient-text">Since 2009</span>
+            {content.heading}{" "}
+            <span className="gradient-text">{content.heading_accent}</span>
           </h2>
           <p
             className="mb-5"
@@ -1425,14 +1478,11 @@ const AboutSection = () => (
               lineHeight: 1.85,
             }}
           >
-            We&apos;re not just a dental clinic—we&apos;re your partners in achieving and
-            maintaining the perfect smile. With state-of-the-art technology and
-            a team of passionate professionals, we make dental care comfortable,
-            efficient, and effective.
+            {content.description}
           </p>
 
           <div className="row g-3 mb-5">
-            {ABOUT_FEATURES.map((feature, idx) => (
+            {(content.features || []).map((feature: { icon: string; title: string; description: string }, idx: number) => (
               <div className="col-sm-6" key={idx}>
                 <div className="feature-row">
                   <div className="feature-icon-box">
@@ -1469,9 +1519,10 @@ const AboutSection = () => (
 interface ServicesSectionProps {
   services: Service[];
   loading: boolean;
+  content: typeof DEFAULT_SERVICES_HEADER;
 }
 
-const ServicesSection = ({ services, loading }: ServicesSectionProps) => (
+const ServicesSection = ({ services, loading, content }: ServicesSectionProps) => (
   <section id="services" className="services-section section-py">
     <div className="container">
 
@@ -1496,19 +1547,19 @@ const ServicesSection = ({ services, loading }: ServicesSectionProps) => (
                 verticalAlign: "middle",
               }}
             />
-            Our Services
+            {content.section_label}
           </div>
           <h2
             className="font-serif text-white"
             style={{ fontSize: "clamp(1.9rem, 3.5vw, 2.8rem)", fontWeight: 700 }}
           >
-            Comprehensive{" "}
-            <span style={{ color: THEME_CONFIG.accent }}>Dental Solutions</span>
+            {content.heading}{" "}
+            <span style={{ color: THEME_CONFIG.accent }}>{content.heading_accent}</span>
           </h2>
         </div>
         <div className="col-lg-5 text-lg-end mt-3 mt-lg-0">
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.95rem", lineHeight: 1.7 }}>
-            From routine checkups to advanced treatments, we&apos;ve got your smile covered
+            {content.subtext}
           </p>
         </div>
       </div>
@@ -1589,9 +1640,10 @@ const ServicesSection = ({ services, loading }: ServicesSectionProps) => (
 interface DoctorsSectionProps {
   doctors: Doctor[];
   loading: boolean;
+  content: typeof DEFAULT_DOCTORS_HEADER;
 }
 
-const DoctorsSection = ({ doctors, loading }: DoctorsSectionProps) => (
+const DoctorsSection = ({ doctors, loading, content }: DoctorsSectionProps) => (
   <section id="doctors" className="doctors-section section-py">
     <div className="container">
 
@@ -1610,7 +1662,7 @@ const DoctorsSection = ({ doctors, loading }: DoctorsSectionProps) => (
               verticalAlign: "middle",
             }}
           />
-          Meet Our Team
+          {content.section_label}
         </div>
         <h2
           className="font-serif"
@@ -1620,14 +1672,14 @@ const DoctorsSection = ({ doctors, loading }: DoctorsSectionProps) => (
             color: THEME_CONFIG.charcoal,
           }}
         >
-          Expert{" "}
-          <span className="gradient-text">Dental Professionals</span>
+          {content.heading}{" "}
+          <span className="gradient-text">{content.heading_accent}</span>
         </h2>
         <p
           className="mt-3"
           style={{ color: "#6B7B78", maxWidth: 520, margin: "0.75rem auto 0" }}
         >
-          Certified specialists dedicated to your oral health and beautiful smile
+          {content.subtext}
         </p>
       </div>
 
@@ -1686,7 +1738,7 @@ const DoctorsSection = ({ doctors, loading }: DoctorsSectionProps) => (
 );
 
 // ─── Testimonials Section ─────────────────────────────────────────────────────
-const TestimonialsSection = () => (
+const TestimonialsSection = ({ content }: { content: typeof DEFAULT_TESTIMONIALS }) => (
   <section className="testimonials-section section-py">
     <div className="container">
 
@@ -1705,14 +1757,14 @@ const TestimonialsSection = () => (
               verticalAlign: "middle",
             }}
           />
-          Patient Stories
+          {content.section_label}
         </div>
         <h2
           className="font-serif text-white"
           style={{ fontSize: "clamp(1.9rem, 3.5vw, 2.8rem)", fontWeight: 700 }}
         >
-          What Our{" "}
-          <span style={{ color: THEME_CONFIG.accent }}>Patients Say</span>
+          {content.heading}{" "}
+          <span style={{ color: THEME_CONFIG.accent }}>{content.heading_accent}</span>
         </h2>
       </div>
 
@@ -1729,7 +1781,7 @@ const TestimonialsSection = () => (
             pagination={{ clickable: true, dynamicBullets: true }}
             className="pb-5"
           >
-            {TESTIMONIALS.map((testimonial, idx) => (
+            {(content.items || []).map((testimonial: Testimonial, idx: number) => (
               <SwiperSlide key={idx}>
                 <div className="testimonial-card-luxury">
                   <span className="quote-mark">{'\u201C'}</span>
@@ -1776,7 +1828,7 @@ const TestimonialsSection = () => (
 );
 
 // ─── CTA Section ──────────────────────────────────────────────────────────────
-const CTASection = () => (
+const CTASection = ({ content }: { content: typeof DEFAULT_CTA }) => (
   <section className="cta-section section-py">
     <div className="container">
       <div className="cta-inner" data-aos="zoom-in" data-aos-offset="50">
@@ -1799,7 +1851,7 @@ const CTASection = () => (
                 lineHeight: 1.2,
               }}
             >
-              Ready to Transform<br />Your Smile?
+              {content.heading_line1}<br />{content.heading_line2}
             </h2>
             <p
               className="mb-5"
@@ -1811,7 +1863,7 @@ const CTASection = () => (
                 lineHeight: 1.8,
               }}
             >
-              Book your appointment today and experience the Alaya difference. Your journey to a healthier, brighter smile starts here.
+              {content.description}
             </p>
             <div className="d-flex justify-content-center flex-wrap gap-3">
               <Link href="/book" className="btn-luxury-primary">
@@ -1835,51 +1887,51 @@ const CTASection = () => (
 );
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
-interface FooterClinicInfoProps {
+interface ClinicInfo {
   title: string;
   address: string;
+  phone: string;
+  email: string;
+  hours: string;
 }
 
-const FooterClinicInfo = ({ title, address }: FooterClinicInfoProps) => (
+const FooterClinicInfo = ({ clinic }: { clinic: ClinicInfo }) => (
   <div className="col-lg-4">
-    <div className="footer-heading">{title}</div>
+    <div className="footer-heading">{clinic.title}</div>
     <ul className="list-unstyled mb-0">
       <li>
         <div className="footer-contact-row">
           <i className="bi bi-geo-alt-fill"></i>
-          <span>{address}</span>
+          <span>{clinic.address}</span>
         </div>
       </li>
       <li>
         <div className="footer-contact-row">
           <i className="bi bi-telephone-fill"></i>
-          <a href="tel:+918848659365" className="footer-link">
-            +91 8848659365
+          <a href={`tel:${clinic.phone.replace(/\s/g, '')}`} className="footer-link">
+            {clinic.phone}
           </a>
         </div>
       </li>
       <li>
         <div className="footer-contact-row">
           <i className="bi bi-envelope-fill"></i>
-          <a
-            href="mailto:alayadentalcare@gmail.com"
-            className="footer-link"
-          >
-            alayadentalcare@gmail.com
+          <a href={`mailto:${clinic.email}`} className="footer-link">
+            {clinic.email}
           </a>
         </div>
       </li>
       <li>
         <div className="footer-contact-row">
           <i className="bi bi-clock-fill"></i>
-          <span>Mon–Sat: 10AM – 8PM</span>
+          <span>{clinic.hours}</span>
         </div>
       </li>
     </ul>
   </div>
 );
 
-const Footer = () => (
+const Footer = ({ content }: { content: typeof DEFAULT_FOOTER }) => (
   <footer id="contact" className="footer-luxury">
     <div className="container py-5">
       <div className="row g-5">
@@ -1908,10 +1960,10 @@ const Footer = () => (
                 className="text-white fw-bold font-serif"
                 style={{ fontSize: "1rem" }}
               >
-                Alaya Dental Care
+                {content.brand_name}
               </div>
               <div style={{ fontSize: "0.62rem", color: THEME_CONFIG.gold, letterSpacing: "1.5px", textTransform: "uppercase" }}>
-                Premium Dental Studio
+                {content.tagline}
               </div>
             </div>
           </div>
@@ -1920,13 +1972,11 @@ const Footer = () => (
             className="mb-4"
             style={{ color: "rgba(255,255,255,0.38)", fontSize: "0.87rem", lineHeight: 1.8 }}
           >
-            Making the world smile brighter, one tooth at a time. Experience
-            dental care that combines cutting-edge technology with genuine
-            compassion.
+            {content.description}
           </p>
           <div className="d-flex gap-2 flex-wrap">
-            {(["facebook", "instagram", "whatsapp", "linkedin"] as const).map(
-              (social) => (
+            {(content.social_links || []).map(
+              (social: string) => (
                 <a
                   key={social}
                   href="#"
@@ -1940,21 +1990,16 @@ const Footer = () => (
           </div>
         </div>
 
-        <FooterClinicInfo
-          title="Chettiyamkinar Clinic"
-          address="Kozhichena Road, Kuttippala, Chettiyamkinar, Kerala 676501"
-        />
-        <FooterClinicInfo
-          title="Kurukathani Clinic"
-          address="Kurukathani, Perumanna Klari Gramapanchayat, Kerala 676551"
-        />
+        {(content.clinics || []).map((clinic: { title: string; address: string; phone: string; email: string; hours: string }, idx: number) => (
+          <FooterClinicInfo key={idx} clinic={clinic} />
+        ))}
       </div>
 
       {/* Bottom bar */}
       <div className="footer-bottom mt-5">
         <div className="row align-items-center g-2">
           <div className="col-md-6 text-center text-md-start">
-            © 2026 Alaya Dental Care. All rights reserved.
+            {content.copyright}
           </div>
           <div className="col-md-6 text-center text-md-end">
             <a href="#" className="footer-link me-3">Privacy Policy</a>
