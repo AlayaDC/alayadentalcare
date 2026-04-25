@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../components/AdminLayout";
+import { useAdminAuth } from "../../../components/AdminAuthContext";
 
 interface Patient {
   id: string;
@@ -39,8 +35,7 @@ interface Consultation {
 }
 
 export default function ConsultationsPage() {
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [dataLoading, setDataLoading] = useState(true);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -61,7 +56,6 @@ export default function ConsultationsPage() {
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
 
   const themeColor = "#086351";
-  const supabase = createClient();
 
   const fetchConsultations = useCallback(async (search = "", status = "") => {
     try {
@@ -100,30 +94,20 @@ export default function ConsultationsPage() {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        if (session?.user) {
-          await Promise.all([fetchConsultations(), fetchDoctors()]);
-          setDataLoading(false);
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      } finally {
-        setAuthLoading(false);
-      }
+    const init = async () => {
+      await Promise.all([fetchConsultations(), fetchDoctors()]);
+      setDataLoading(false);
     };
-    checkSession();
-  }, [supabase.auth, fetchConsultations, fetchDoctors]);
+    init();
+  }, [fetchConsultations, fetchDoctors]);
 
   // Search + filter debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (user) fetchConsultations(searchTerm, statusFilter);
+      fetchConsultations(searchTerm, statusFilter);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchTerm, statusFilter, user, fetchConsultations]);
+  }, [searchTerm, statusFilter, fetchConsultations]);
 
   // Patient search debounce
   useEffect(() => {
@@ -186,7 +170,6 @@ export default function ConsultationsPage() {
 
   // --- Auto-open modal if patient_id param exists (from Patients page) ---
   useEffect(() => {
-    if (!user) return;
     const params = new URLSearchParams(window.location.search);
     const pId = params.get('patient_id');
     const pName = params.get('patient_name');
@@ -203,7 +186,7 @@ export default function ConsultationsPage() {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [user]);
+  }, []);
 
   const openAddModal = () => {
     setSelectedPatientId("");
@@ -237,27 +220,8 @@ export default function ConsultationsPage() {
     return treatments?.reduce((sum, t) => sum + (Number(t.amount) || 0), 0) || 0;
   };
 
-  if (authLoading) {
-    return <AdminLoadingSpinner />;
-  }
-
-  if (!user) {
-    return (
-      <div className="container py-5 text-center">
-        <h2 className="text-danger">Access Denied</h2>
-        <p>You must be logged in to view this page.</p>
-        <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link>
-      </div>
-    );
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-  };
-
   return (
-    <AdminLayout currentPage="consultations" onLogout={handleLogout}>
+    <>
       {dataLoading ? (
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
           <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
@@ -572,6 +536,6 @@ export default function ConsultationsPage() {
       )}
       </>
       )}
-    </AdminLayout>
+    </>
   );
 }

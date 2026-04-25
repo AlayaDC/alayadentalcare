@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../components/AdminLayout";
+import { useAdminAuth } from "../../../components/AdminAuthContext";
 
 interface PriceTier {
   label: string;
@@ -16,8 +11,7 @@ interface PriceTier {
 const CATEGORIES = ["General", "Cosmetic", "Orthodontic", "Surgical", "Preventive", "Restorative"];
 
 export default function ManageServicesPage() {
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [dataLoading, setDataLoading] = useState(true);
 
   const [servicesList, setServicesList] = useState<any[]>([]);
@@ -53,7 +47,6 @@ export default function ManageServicesPage() {
   const [activeTab, setActiveTab] = useState<"website" | "pricing">("website");
 
   const themeColor = '#086351';
-  const supabase = createClient();
 
   const fetchServices = useCallback(async () => {
     try {
@@ -66,22 +59,12 @@ export default function ManageServicesPage() {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        if (session?.user) {
-          await fetchServices();
-          setDataLoading(false);
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      } finally {
-        setAuthLoading(false);
-      }
+    const init = async () => {
+      await fetchServices();
+      setDataLoading(false);
     };
-    checkSession();
-  }, [supabase.auth, fetchServices]);
+    init();
+  }, [fetchServices]);
 
   const uploadImageToServer = async (file: File) => {
     const formData = new FormData();
@@ -244,16 +227,12 @@ export default function ManageServicesPage() {
     return prices.filter(p => p.label).map((p) => `${p.label}: \u20B9${Number(p.amount).toLocaleString()}`).join(" | ");
   };
 
-  if (authLoading) return <AdminLoadingSpinner />;
-  if (!user) return <div className="container py-5 text-center"><h2 className="text-danger">Access Denied</h2><Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link></div>;
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await logout();
   };
 
   return (
-    <AdminLayout currentPage="services" onLogout={handleLogout}>
+    <>
       {dataLoading ? (
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
           <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
@@ -601,6 +580,6 @@ export default function ManageServicesPage() {
 
       </>
       )}
-    </AdminLayout>
+    </>
   );
 }

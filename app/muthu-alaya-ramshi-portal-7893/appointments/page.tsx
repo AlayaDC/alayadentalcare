@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../components/AdminLayout";
+import { useAdminAuth } from "../../../components/AdminAuthContext";
 
 const THEME = {
   primary: "#086351",
@@ -18,8 +14,7 @@ const THEME = {
 };
 
 export default function ManageAppointmentsPage() {
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [dataLoading, setDataLoading] = useState(true);
   const [appointments, setAppointments] = useState<any[]>([]);
 
@@ -44,7 +39,6 @@ export default function ManageAppointmentsPage() {
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const patientSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const supabase = createClient();
   const seenIdsRef = useRef<Set<any>>(new Set());
   const initialFetchDoneRef = useRef(false);
   const ringerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -189,29 +183,18 @@ export default function ManageAppointmentsPage() {
 
   // ─── INITIALIZATION & POLLING ───
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        if (session?.user) {
-          await fetchAppointments(false);
-          initialFetchDoneRef.current = true;
-          setDataLoading(false);
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      } finally {
-        setAuthLoading(false);
-      }
+    const init = async () => {
+      await fetchAppointments(false);
+      initialFetchDoneRef.current = true;
+      setDataLoading(false);
     };
-    checkSession();
-  }, [supabase.auth, fetchAppointments]);
+    init();
+  }, [fetchAppointments]);
 
   useEffect(() => {
-    if (!user) return;
     const intervalId = setInterval(() => fetchAppointments(true), 15000);
     return () => clearInterval(intervalId);
-  }, [user, fetchAppointments]);
+  }, [fetchAppointments]);
 
   // ─── ACTION HANDLERS ───
   const handleUpdateStatus = async (id: string, newStatus: string) => {
@@ -316,17 +299,12 @@ export default function ManageAppointmentsPage() {
     }
   };
 
-  // ─── RENDER CONDITIONS ───
-  if (authLoading) return <AdminLoadingSpinner />;
-  if (!user) return <div className="container py-5 text-center"><h2 className="text-danger">Access Denied</h2><Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link></div>;
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await logout();
   };
 
   return (
-    <AdminLayout currentPage="appointments" onLogout={handleLogout}>
+    <>
       {dataLoading ? (
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
           <div className="spinner-border" style={{ color: THEME.primary, width: "2.5rem", height: "2.5rem" }}></div>
@@ -545,7 +523,7 @@ export default function ManageAppointmentsPage() {
 
       </div>
       )}
-    </AdminLayout>
+    </>
   );
 }
 

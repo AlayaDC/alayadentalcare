@@ -2,15 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../components/AdminLayout";
+import { useAdminAuth } from "../../../components/AdminAuthContext";
 
 export default function ManagePatientsPage() {
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [dataLoading, setDataLoading] = useState(true);
 
   const [patientsList, setPatientsList] = useState<any[]>([]);
@@ -48,7 +43,6 @@ export default function ManagePatientsPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const themeColor = '#086351';
-  const supabase = createClient();
 
   // --- Fetch Patients ---
   const fetchPatients = useCallback(async (search = "") => {
@@ -65,22 +59,12 @@ export default function ManagePatientsPage() {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        if (session?.user) {
-          await fetchPatients();
-          setDataLoading(false);
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      } finally {
-        setAuthLoading(false);
-      }
+    const init = async () => {
+      await fetchPatients();
+      setDataLoading(false);
     };
-    checkSession();
-  }, [supabase.auth, fetchPatients]);
+    init();
+  }, [fetchPatients]);
 
   // --- Auto-open view modal if highlight param exists ---
   useEffect(() => {
@@ -102,10 +86,10 @@ export default function ManagePatientsPage() {
   // --- Search with debounce ---
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (user) fetchPatients(searchTerm);
+      fetchPatients(searchTerm);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchTerm, user, fetchPatients]);
+  }, [searchTerm, fetchPatients]);
 
   // --- Save Patient (Add / Edit) ---
   const handleSavePatient = async (e: React.FormEvent) => {
@@ -256,29 +240,12 @@ export default function ManagePatientsPage() {
     window.location.href = `/muthu-alaya-ramshi-portal-7893/consultations?${params.toString()}`;
   };
 
-  // --- Auth Loading ---
-  if (authLoading) {
-    return <AdminLoadingSpinner />;
-  }
-
-  // --- Access Denied ---
-  if (!user) {
-    return (
-      <div className="container py-5 text-center">
-        <h2 className="text-danger">Access Denied</h2>
-        <p>You must be logged in to view this page.</p>
-        <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link>
-      </div>
-    );
-  }
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await logout();
   };
 
   return (
-    <AdminLayout currentPage="patients" onLogout={handleLogout}>
+    <>
       {dataLoading ? (
         <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
           <div className="spinner-border" style={{ color: themeColor, width: "2.5rem", height: "2.5rem" }}></div>
@@ -875,6 +842,6 @@ export default function ManagePatientsPage() {
 
       </>
       )}
-    </AdminLayout>
+    </>
   );
 }

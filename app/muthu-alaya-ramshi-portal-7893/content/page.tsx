@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../components/AdminLayout";
+import { useAdminAuth } from "../../../components/AdminAuthContext";
 
 const themeColor = "#086351";
 
@@ -70,23 +66,11 @@ const SECTION_CONFIG = [
 ];
 
 export default function ManageContentPage() {
-  const [user, setUser] = useState<unknown>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [content, setContent] = useState<SiteContent>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setAuthLoading(false);
-    };
-    checkSession();
-  }, [supabase.auth]);
 
   const fetchContent = useCallback(async () => {
     setLoading(true);
@@ -103,25 +87,10 @@ export default function ManageContentPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (user) fetchContent();
-  }, [user, fetchContent]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    const form = e.target as HTMLFormElement;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
-    else if (data?.user) setUser(data.user);
-    setAuthLoading(false);
-  };
+  useEffect(() => { fetchContent(); }, [fetchContent]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await logout();
   };
 
   const toggleSection = (key: string) => {
@@ -180,35 +149,8 @@ export default function ManageContentPage() {
     }
   };
 
-  if (authLoading) {
-    return <AdminLoadingSpinner />;
-  }
-
-  if (!user) {
-    return (
-      <div className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}>
-        <div className="card border-0 shadow-lg p-5" style={{ borderRadius: "20px", width: "100%", maxWidth: "400px" }}>
-          <div className="text-center mb-4">
-            <h3 className="fw-bold" style={{ color: themeColor }}>Restricted Area</h3>
-          </div>
-          <form onSubmit={handleLogin}>
-            <div className="mb-3">
-              <input type="email" name="email" placeholder="Email" className="form-control" required />
-            </div>
-            <div className="mb-4">
-              <input type="password" name="password" placeholder="Password" className="form-control" required />
-            </div>
-            <button type="submit" className="btn w-100 text-white fw-bold" style={{ backgroundColor: themeColor }}>
-              Unlock Portal
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <AdminLayout currentPage="content" onLogout={handleLogout}>
+    <>
       <div className="container-fluid px-3 px-lg-4 py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="fw-bold" style={{ color: themeColor }}>
@@ -615,6 +557,6 @@ export default function ManageContentPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </>
   );
 }

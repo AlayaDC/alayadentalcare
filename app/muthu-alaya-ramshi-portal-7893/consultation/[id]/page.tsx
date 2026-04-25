@@ -3,11 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import { createClient } from "../../../../utils/supabase/client";
-import AdminLoadingSpinner from "../../../../components/AdminLoadingSpinner";
-import AdminLayout from "../../../../components/AdminLayout";
+import { useAdminAuth } from "../../../../components/AdminAuthContext";
 
 interface Patient {
   id: string;
@@ -92,8 +88,7 @@ export default function ConsultationDetailPage() {
   const params = useParams();
   const consultationId = params.id as string;
 
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const { logout } = useAdminAuth();
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [dentalChart, setDentalChart] = useState<DentalChartEntry[]>([]);
@@ -126,7 +121,6 @@ export default function ConsultationDetailPage() {
   const [discount, setDiscount] = useState(0);
 
   const themeColor = "#086351";
-  const supabase = createClient();
 
   const fetchConsultation = useCallback(async () => {
     try {
@@ -185,22 +179,17 @@ export default function ConsultationDetailPage() {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
+    const loadData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-        if (session?.user) {
-          await Promise.all([fetchConsultation(), fetchTreatments(), fetchTreatmentCatalog()]);
-        }
+        await Promise.all([fetchConsultation(), fetchTreatments(), fetchTreatmentCatalog()]);
       } catch (err) {
-        console.error("Auth check failed:", err);
+        console.error("Data load failed:", err);
       } finally {
-        setAuthLoading(false);
         setLoading(false);
       }
     };
-    checkSession();
-  }, [supabase.auth, fetchConsultation, fetchTreatments, fetchTreatmentCatalog]);
+    loadData();
+  }, [fetchConsultation, fetchTreatments, fetchTreatmentCatalog]);
 
   // Fetch dental chart when consultation loads
   useEffect(() => {
@@ -434,15 +423,11 @@ export default function ConsultationDetailPage() {
   const treatmentTotal = treatments.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const finalTotal = Math.max(0, treatmentTotal - discount);
 
-  if (authLoading || loading) {
-    return <AdminLoadingSpinner />;
-  }
-
-  if (!user) {
+  if (loading) {
     return (
-      <div className="container py-5 text-center">
-        <h2 className="text-danger">Access Denied</h2>
-        <Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link>
+      <div className="text-center py-5">
+        <div className="spinner-border" style={{ color: "#086351" }}></div>
+        <p className="mt-2 text-muted small">Loading...</p>
       </div>
     );
   }
@@ -495,12 +480,11 @@ export default function ConsultationDetailPage() {
   );
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    await logout();
   };
 
   return (
-    <AdminLayout currentPage="consultations" onLogout={handleLogout}>
+    <>
       <div className="container-fluid px-3 px-lg-4 py-4">
         {/* Patient Info + Status Row */}
         <div className="row g-3 mb-4">
@@ -1023,6 +1007,6 @@ export default function ConsultationDetailPage() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 }
