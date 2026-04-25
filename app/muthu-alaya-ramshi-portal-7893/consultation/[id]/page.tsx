@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../../components/AdminLayout";
 
 interface Patient {
@@ -122,6 +123,7 @@ export default function ConsultationDetailPage() {
 
   // Invoice generation
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [discount, setDiscount] = useState(0);
 
   const themeColor = "#086351";
   const supabase = createClient();
@@ -354,7 +356,7 @@ export default function ConsultationDetailPage() {
       alert("No completed treatments to invoice.");
       return;
     }
-    if (!window.confirm(`Generate invoice for ${completedTreatments.length} completed treatments?`)) return;
+    if (!window.confirm(`Generate invoice for ${completedTreatments.length} completed treatments with discount ₹${discount.toLocaleString()}?`)) return;
 
     setGeneratingInvoice(true);
     try {
@@ -371,11 +373,20 @@ export default function ConsultationDetailPage() {
           patient_id: consultation.patient_id,
           consultation_id: consultationId,
           items,
-          discount: 0,
+          discount,
         }),
       });
       if (!res.ok) throw new Error("Failed");
-      alert("Invoice generated! Go to Invoices page to view.");
+
+      // Auto-mark consultation as Completed
+      await fetch("/api/admin/consultations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: consultationId, status: "Completed" }),
+      });
+
+      // Navigate to invoices page
+      window.location.href = "/muthu-alaya-ramshi-portal-7893/invoices";
     } catch {
       alert("Failed to generate invoice.");
     }
@@ -421,13 +432,10 @@ export default function ConsultationDetailPage() {
   };
 
   const treatmentTotal = treatments.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const finalTotal = Math.max(0, treatmentTotal - discount);
 
   if (authLoading || loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-success"></div>
-      </div>
-    );
+    return <AdminLoadingSpinner />;
   }
 
   if (!user) {
@@ -535,11 +543,29 @@ export default function ConsultationDetailPage() {
           <div className="col-lg-4">
             <div className="card border-0 shadow-sm h-100" style={{ borderRadius: "15px" }}>
               <div className="card-body d-flex flex-column justify-content-center align-items-center">
-                <div className="text-muted small">Treatment Total</div>
-                <div className="fw-bold fs-3" style={{ color: themeColor }}>
-                  &#8377;{treatmentTotal.toLocaleString()}
-                </div>
                 <div className="text-muted small">{treatments.length} treatments</div>
+                <div className="fw-semibold fs-5 text-muted">
+                  Subtotal: &#8377;{treatmentTotal.toLocaleString()}
+                </div>
+                {/* Discount Input */}
+                <div className="d-flex align-items-center gap-2 my-2 w-100" style={{ maxWidth: "200px" }}>
+                  <label className="text-muted small text-nowrap mb-0">Discount:</label>
+                  <div className="input-group input-group-sm">
+                    <span className="input-group-text bg-light border-0 px-2">&#8377;</span>
+                    <input
+                      type="number"
+                      className="form-control bg-light border-0 text-center fw-bold"
+                      value={discount || ""}
+                      onChange={(e) => setDiscount(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="0"
+                      min="0"
+                      style={{ maxWidth: "100px" }}
+                    />
+                  </div>
+                </div>
+                <div className="fw-bold fs-3" style={{ color: themeColor }}>
+                  &#8377;{finalTotal.toLocaleString()}
+                </div>
                 <button
                   className="btn btn-sm text-white mt-2 px-3"
                   style={{ backgroundColor: themeColor, borderRadius: "8px" }}
@@ -761,8 +787,20 @@ export default function ConsultationDetailPage() {
                   </tbody>
                   <tfoot>
                     <tr className="table-light">
+                      <td colSpan={2} className="px-4 fw-semibold text-end">Subtotal:</td>
+                      <td className="fw-semibold">&#8377;{treatmentTotal.toLocaleString()}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                    {discount > 0 && (
+                      <tr className="table-light">
+                        <td colSpan={2} className="px-4 fw-semibold text-end text-danger">Discount:</td>
+                        <td className="fw-semibold text-danger">- &#8377;{discount.toLocaleString()}</td>
+                        <td colSpan={2}></td>
+                      </tr>
+                    )}
+                    <tr className="table-light">
                       <td colSpan={2} className="px-4 fw-bold text-end">Total:</td>
-                      <td className="fw-bold fs-5" style={{ color: themeColor }}>&#8377;{treatmentTotal.toLocaleString()}</td>
+                      <td className="fw-bold fs-5" style={{ color: themeColor }}>&#8377;{finalTotal.toLocaleString()}</td>
                       <td colSpan={2}></td>
                     </tr>
                   </tfoot>

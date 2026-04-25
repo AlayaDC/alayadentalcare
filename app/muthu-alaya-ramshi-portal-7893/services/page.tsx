@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../components/AdminLayout";
 
 interface PriceTier {
@@ -239,7 +240,7 @@ export default function ManageServicesPage() {
     return prices.filter(p => p.label).map((p) => `${p.label}: \u20B9${Number(p.amount).toLocaleString()}`).join(" | ");
   };
 
-  if (authLoading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-success"></div></div>;
+  if (authLoading) return <AdminLoadingSpinner />;
   if (!user) return <div className="container py-5 text-center"><h2 className="text-danger">Access Denied</h2><Link href="/muthu-alaya-ramshi-portal-7893" className="btn btn-primary">Go to Login</Link></div>;
 
   const handleLogout = async () => {

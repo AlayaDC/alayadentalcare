@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../components/AdminLayout";
 
 export default function ManagePatientsPage() {
@@ -35,6 +36,15 @@ export default function ManagePatientsPage() {
   // --- View Patient Modal ---
   const [viewPatient, setViewPatient] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+
+  // --- Post-save state: show Book Consultation button ---
+  const [savedPatientId, setSavedPatientId] = useState<string | null>(null);
+
+  // --- History Modal ---
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyPatient, setHistoryPatient] = useState<any>(null);
+  const [historyData, setHistoryData] = useState<{ appointments: any[]; consultations: any[]; invoices: any[] }>({ appointments: [], consultations: [], invoices: [] });
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const themeColor = '#086351';
   const supabase = createClient();
@@ -67,6 +77,23 @@ export default function ManagePatientsPage() {
     };
     checkSession();
   }, [supabase.auth, fetchPatients]);
+
+  // --- Auto-open view modal if highlight param exists ---
+  useEffect(() => {
+    if (patientsList.length > 0 && !showViewModal) {
+      const params = new URLSearchParams(window.location.search);
+      const hId = params.get('highlight');
+      if (hId) {
+        const patient = patientsList.find((p: any) => p.id === hId);
+        if (patient) {
+          setViewPatient(patient);
+          setShowViewModal(true);
+          // Clean URL without reload
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
+    }
+  }, [patientsList]);
 
   // --- Search with debounce ---
   useEffect(() => {
@@ -108,7 +135,7 @@ export default function ManagePatientsPage() {
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Failed to update patient");
-        alert("Patient updated successfully!");
+        setSavedPatientId(editingId);
       } else {
         const response = await fetch('/api/admin/patients', {
           method: 'POST',
@@ -117,10 +144,9 @@ export default function ManagePatientsPage() {
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Failed to add patient");
-        alert("Patient added successfully!");
+        setSavedPatientId(result.data?.id || null);
       }
 
-      closeModal();
       fetchPatients(searchTerm);
     } catch (error: any) {
       setMessage(`Failed: ${error.message}`);
@@ -160,6 +186,34 @@ export default function ManagePatientsPage() {
     }
   };
 
+  // --- View Patient History ---
+  const handleViewHistory = async (patient: any) => {
+    setHistoryPatient(patient);
+    setShowHistoryModal(true);
+    setHistoryLoading(true);
+    try {
+      const [apptRes, consultRes, invRes] = await Promise.all([
+        fetch('/api/admin/appointments'),
+        fetch(`/api/admin/consultations?patient_id=${patient.id}`),
+        fetch(`/api/admin/invoices?patient_id=${patient.id}`),
+      ]);
+      const [apptData, consultData, invData] = await Promise.all([
+        apptRes.json(), consultRes.json(), invRes.json(),
+      ]);
+      // Filter appointments by phone match
+      const phone10 = patient.phone?.replace(/\D/g, '').slice(-10);
+      const appts = (apptData.data || []).filter((a: any) => a.phone?.replace(/\D/g, '').slice(-10) === phone10);
+      setHistoryData({
+        appointments: appts,
+        consultations: consultData.data || [],
+        invoices: invData.data || [],
+      });
+    } catch {
+      setHistoryData({ appointments: [], consultations: [], invoices: [] });
+    }
+    setHistoryLoading(false);
+  };
+
   // --- Modal Controls ---
   const openAddModal = () => {
     setEditingId(null);
@@ -173,6 +227,7 @@ export default function ManagePatientsPage() {
   const closeModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setSavedPatientId(null);
     setName(""); setPhone(""); setEmail(""); setAge("");
     setGender(""); setBloodGroup(""); setAddress("");
     setMedicalHistory(""); setNotes("");
@@ -191,37 +246,15 @@ export default function ManagePatientsPage() {
   };
 
   // --- Book Consultation from View Modal ---
-  const handleBookConsultation = async (patient: any) => {
-    if (!window.confirm(`Create a new consultation for ${patient.name}?`)) return;
-    try {
-      const response = await fetch('/api/admin/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patient_id: patient.id,
-          date: new Date().toISOString().split('T')[0],
-          chief_complaint: '',
-        }),
-      });
-      const result = await response.json();
-      if (response.ok && result.data) {
-        closeViewModal();
-        window.location.href = `/muthu-alaya-ramshi-portal-7893/consultation/${result.data.id}`;
-      } else {
-        alert('Failed to create consultation: ' + (result.error || 'Unknown error'));
-      }
-    } catch {
-      alert('Network error creating consultation.');
-    }
+  const handleBookConsultation = (patient: any) => {
+    closeViewModal();
+    const params = new URLSearchParams({ patient_id: patient.id, patient_name: patient.name, patient_phone: patient.phone || '' });
+    window.location.href = `/muthu-alaya-ramshi-portal-7893/consultations?${params.toString()}`;
   };
 
   // --- Auth Loading ---
   if (authLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-success"></div>
-      </div>
-    );
+    return <AdminLoadingSpinner />;
   }
 
   // --- Access Denied ---
@@ -288,7 +321,8 @@ export default function ManagePatientsPage() {
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">ID</th>
+                  <th className="py-3">Name</th>
                   <th className="py-3">Phone</th>
                   <th className="py-3">Age</th>
                   <th className="py-3">Gender</th>
@@ -299,7 +333,7 @@ export default function ManagePatientsPage() {
               <tbody>
                 {patientsList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">
+                    <td colSpan={7} className="text-center py-4 text-muted">
                       {searchTerm ? "No patients found matching your search." : "No patients found in database."}
                     </td>
                   </tr>
@@ -307,6 +341,11 @@ export default function ManagePatientsPage() {
                   patientsList.map((patient) => (
                     <tr key={patient.id}>
                       <td className="px-4">
+                        <span className="badge bg-light text-dark border fw-bold" style={{ fontSize: '0.8rem' }}>
+                          {patient.patient_code || '—'}
+                        </span>
+                      </td>
+                      <td>
                         <div className="fw-semibold">{patient.name}</div>
                         {patient.email && (
                           <small className="text-muted">{patient.email}</small>
@@ -425,27 +464,25 @@ export default function ManagePatientsPage() {
                   <div className="row g-3">
                     {/* Full Name */}
                     <div className="col-md-6">
-                      <label className="form-label fw-bold text-muted small mb-1">Full Name *</label>
+                      <label className="form-label fw-bold text-muted small mb-1">Full Name</label>
                       <input
                         type="text"
                         className="form-control form-control-lg bg-light border-0"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter full name"
-                        required
                       />
                     </div>
 
                     {/* Phone Number */}
                     <div className="col-md-6">
-                      <label className="form-label fw-bold text-muted small mb-1">Phone Number *</label>
+                      <label className="form-label fw-bold text-muted small mb-1">Phone Number</label>
                       <input
                         type="text"
                         className="form-control form-control-lg bg-light border-0"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="Enter phone number"
-                        required
                       />
                     </div>
 
@@ -564,19 +601,43 @@ export default function ManagePatientsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-2">
-                    <button
-                      type="submit"
-                      className="btn btn-lg w-100 text-white fw-bold shadow-sm"
-                      style={{ backgroundColor: themeColor, borderRadius: '12px' }}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <><span className="spinner-border spinner-border-sm me-2"></span> Saving...</>
-                      ) : (
-                        editingId ? "Update Patient Details" : "Save New Patient"
-                      )}
-                    </button>
+                  <div className="mt-4 pt-2 d-flex flex-column gap-2">
+                    {!savedPatientId ? (
+                      <button
+                        type="submit"
+                        className="btn btn-lg w-100 text-white fw-bold shadow-sm"
+                        style={{ backgroundColor: themeColor, borderRadius: '12px' }}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <><span className="spinner-border spinner-border-sm me-2"></span> Saving...</>
+                        ) : (
+                          editingId ? "Update Patient Details" : "Save New Patient"
+                        )}
+                      </button>
+                    ) : (
+                      <>
+                        <div className="alert alert-success py-2 text-center fw-semibold mb-2">
+                          <i className="bi bi-check-circle me-2"></i>Patient saved successfully!
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleBookConsultation({ id: savedPatientId, name })}
+                          className="btn btn-lg w-100 text-white fw-bold shadow-sm"
+                          style={{ backgroundColor: themeColor, borderRadius: '12px' }}
+                        >
+                          <i className="bi bi-clipboard2-pulse me-2"></i> Book Consultation
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          className="btn btn-lg w-100 btn-outline-secondary fw-bold"
+                          style={{ borderRadius: '12px' }}
+                        >
+                          Close
+                        </button>
+                      </>
+                    )}
                   </div>
                 </form>
               </div>
@@ -610,6 +671,9 @@ export default function ManagePatientsPage() {
                   >
                     {viewPatient.name?.charAt(0)?.toUpperCase() || "P"}
                   </div>
+                  {viewPatient.patient_code && (
+                    <span className="badge mb-2" style={{ backgroundColor: themeColor, fontSize: '0.8rem' }}>{viewPatient.patient_code}</span>
+                  )}
                   <h5 className="fw-bold mb-1">{viewPatient.name}</h5>
                   <p className="text-muted mb-0">{viewPatient.phone}</p>
                 </div>
@@ -675,6 +739,13 @@ export default function ManagePatientsPage() {
                     <i className="bi bi-pencil-square me-2"></i> Edit Patient
                   </button>
                   <button
+                    onClick={() => { closeViewModal(); handleViewHistory(viewPatient); }}
+                    className="btn btn-outline-secondary fw-bold w-100"
+                    style={{ borderRadius: '10px', padding: '0.6rem' }}
+                  >
+                    <i className="bi bi-clock-history me-2"></i> History
+                  </button>
+                  <button
                     onClick={() => handleBookConsultation(viewPatient)}
                     className="btn text-white fw-bold w-100"
                     style={{ background: themeColor, borderRadius: '10px', padding: '0.6rem' }}
@@ -691,6 +762,101 @@ export default function ManagePatientsPage() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- HISTORY MODAL --- */}
+      {showHistoryModal && historyPatient && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '20px' }}>
+              <div className="modal-header border-bottom-0 pb-0 mt-2 mx-2">
+                <h5 className="modal-title fw-bold" style={{ color: themeColor }}>
+                  <i className="bi bi-clock-history me-2"></i>
+                  History — {historyPatient.name}
+                  {historyPatient.patient_code && <span className="badge ms-2" style={{ backgroundColor: themeColor, fontSize: '0.7em' }}>{historyPatient.patient_code}</span>}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => setShowHistoryModal(false)}></button>
+              </div>
+              <div className="modal-body px-4 py-3">
+                {historyLoading ? (
+                  <div className="text-center py-5"><div className="spinner-border" style={{ color: themeColor }}></div></div>
+                ) : (
+                  <>
+                    {/* Appointments */}
+                    <h6 className="fw-bold mb-2" style={{ color: themeColor }}><i className="bi bi-calendar-check me-2"></i>Appointments ({historyData.appointments.length})</h6>
+                    {historyData.appointments.length === 0 ? (
+                      <p className="text-muted small mb-4">No appointments found.</p>
+                    ) : (
+                      <div className="table-responsive mb-4">
+                        <table className="table table-sm table-hover mb-0">
+                          <thead className="table-light"><tr><th>Date</th><th>Time</th><th>Service</th><th>Location</th><th>Status</th></tr></thead>
+                          <tbody>
+                            {historyData.appointments.map((a: any) => (
+                              <tr key={a.id}>
+                                <td>{new Date(a.date).toLocaleDateString()}</td>
+                                <td>{a.time}</td>
+                                <td style={{ textTransform: 'capitalize' }}>{a.service}</td>
+                                <td style={{ textTransform: 'capitalize' }}>{a.location}</td>
+                                <td><span className={`badge ${a.status === 'Check-in' ? 'bg-info' : a.status === 'Cancelled' ? 'bg-danger' : 'bg-warning text-dark'}`}>{a.status}</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Consultations */}
+                    <h6 className="fw-bold mb-2" style={{ color: themeColor }}><i className="bi bi-clipboard2-pulse me-2"></i>Consultations ({historyData.consultations.length})</h6>
+                    {historyData.consultations.length === 0 ? (
+                      <p className="text-muted small mb-4">No consultations found.</p>
+                    ) : (
+                      <div className="table-responsive mb-4">
+                        <table className="table table-sm table-hover mb-0">
+                          <thead className="table-light"><tr><th>Date</th><th>Complaint</th><th>Doctor</th><th>Status</th><th></th></tr></thead>
+                          <tbody>
+                            {historyData.consultations.map((c: any) => (
+                              <tr key={c.id}>
+                                <td>{new Date(c.date).toLocaleDateString()}</td>
+                                <td className="text-truncate" style={{ maxWidth: '200px' }}>{c.chief_complaint || '—'}</td>
+                                <td>{c.doctors?.name || '—'}</td>
+                                <td><span className={`badge ${c.status === 'Open' ? 'bg-warning text-dark' : 'bg-success'}`}>{c.status}</span></td>
+                                <td><Link href={`/muthu-alaya-ramshi-portal-7893/consultation/${c.id}`} className="btn btn-sm btn-outline-primary py-0 px-2"><i className="bi bi-eye"></i></Link></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Invoices */}
+                    <h6 className="fw-bold mb-2" style={{ color: themeColor }}><i className="bi bi-receipt me-2"></i>Invoices ({historyData.invoices.length})</h6>
+                    {historyData.invoices.length === 0 ? (
+                      <p className="text-muted small mb-0">No invoices found.</p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm table-hover mb-0">
+                          <thead className="table-light"><tr><th>Invoice #</th><th>Date</th><th>Total</th><th>Paid</th><th>Status</th><th>Notes</th></tr></thead>
+                          <tbody>
+                            {historyData.invoices.map((inv: any) => (
+                              <tr key={inv.id}>
+                                <td className="fw-semibold">{inv.invoice_number || '—'}</td>
+                                <td>{new Date(inv.created_at).toLocaleDateString()}</td>
+                                <td>&#8377;{(Number(inv.total) || 0).toLocaleString()}</td>
+                                <td>&#8377;{(Number(inv.paid_amount) || 0).toLocaleString()}</td>
+                                <td><span className={`badge ${inv.status === 'Paid' ? 'bg-success' : inv.status === 'Partial' ? 'bg-warning text-dark' : 'bg-secondary'}`}>{inv.status}</span></td>
+                                <td className="text-muted small">{inv.notes || '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

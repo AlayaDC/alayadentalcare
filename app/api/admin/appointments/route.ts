@@ -135,10 +135,16 @@ export async function PATCH(request: Request) {
       if (existingPatients && existingPatients.length > 0) {
         patient_id = existingPatients[0].id;
       } else {
+        // Generate patient_code
+        const year = new Date().getFullYear().toString();
+        const { count: patCount } = await supabase.from('patients').select('id', { count: 'exact', head: true });
+        const nextNum = ((patCount || 0) + 1).toString().padStart(2, '0');
+        const patient_code = `ADC${year}${nextNum}`;
+
         // Create new patient record
         const { data: newPatient, error: patientError } = await supabase
           .from('patients')
-          .insert([{ name: name.trim(), phone }])
+          .insert([{ name: name.trim(), phone, patient_code }])
           .select('id')
           .single();
 

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
         *,
         patients:patient_id (id, name, phone, email),
         invoice_items (id, description, amount, patient_treatment_id),
-        payments (id, amount, method, date)
+        payments (id, amount, method, date, transaction_id, notes)
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
         *,
         patients:patient_id (id, name, phone, email),
         invoice_items (id, description, amount, patient_treatment_id),
-        payments (id, amount, method, date)
+        payments (id, amount, method, date, transaction_id, notes)
       `)
       .eq('id', invoice.id)
       .single();
@@ -184,7 +184,7 @@ export async function PATCH(request: Request) {
       *,
       patients:patient_id (id, name, phone, email),
       invoice_items (id, description, amount, patient_treatment_id),
-      payments (id, amount, method, date)
+      payments (id, amount, method, date, transaction_id, notes)
     `);
     if (error) throw error;
     return NextResponse.json({ success: true, data });

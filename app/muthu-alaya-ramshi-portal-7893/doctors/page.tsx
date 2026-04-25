@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../components/AdminLayout";
 
 export default function ManageDoctorsPage() {
@@ -129,7 +130,7 @@ export default function ManageDoctorsPage() {
     setName(""); setRole(""); setPosition(""); setImageFile(null); setExistingImageUrl("");
   };
 
-  if (authLoading) return <div className="d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-success"></div></div>;
+  if (authLoading) return <AdminLoadingSpinner />;
 
   if (!user) {
     return (

@@ -12,10 +12,12 @@ interface AdminSidebarProps {
 const ADMIN_BASE = "/muthu-alaya-ramshi-portal-7893";
 
 const NAV_ITEMS = [
+  { key: "label-dashboard", label: "Dashboard", icon: "", href: "" },
   { key: "dashboard", label: "Dashboard", icon: "bi-grid-1x2-fill", href: ADMIN_BASE },
+  { key: "label-treatment", label: "Treatment", icon: "", href: "" },
   { key: "appointments", label: "Appointments", icon: "bi-calendar-check", href: `${ADMIN_BASE}/appointments` },
-  { key: "consultations", label: "Consultations", icon: "bi-clipboard2-pulse", href: `${ADMIN_BASE}/consultations` },
   { key: "patients", label: "Patients", icon: "bi-people", href: `${ADMIN_BASE}/patients` },
+  { key: "consultations", label: "Consultations", icon: "bi-clipboard2-pulse", href: `${ADMIN_BASE}/consultations` },
   { key: "invoices", label: "Invoices", icon: "bi-receipt", href: `${ADMIN_BASE}/invoices` },
   { key: "label-website", label: "Website Content", icon: "", href: "" },
   { key: "doctors", label: "Doctors", icon: "bi-person-badge", href: `${ADMIN_BASE}/doctors` },

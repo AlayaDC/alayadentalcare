@@ -5,6 +5,7 @@ import Link from "next/link";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../components/AdminLayout";
 
 interface Patient {
@@ -181,19 +182,27 @@ export default function ConsultationsPage() {
     }
   };
 
-  const handleMarkComplete = async (id: string) => {
-    try {
-      const res = await fetch("/api/admin/consultations", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "Completed" }),
-      });
-      if (!res.ok) throw new Error("Update failed");
-      fetchConsultations(searchTerm, statusFilter);
-    } catch {
-      alert("Failed to update consultation.");
+
+  // --- Auto-open modal if patient_id param exists (from Patients page) ---
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const pId = params.get('patient_id');
+    const pName = params.get('patient_name');
+    const pPhone = params.get('patient_phone');
+    if (pId && pName) {
+      setSelectedPatientId(pId);
+      setPatientSearch(pName + (pPhone ? ` (${pPhone})` : ''));
+      setSelectedDoctorId("");
+      setConsultDate(new Date().toISOString().split("T")[0]);
+      setChiefComplaint("");
+      setExaminationNotes("");
+      setMessage("");
+      setShowModal(true);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
     }
-  };
+  }, [user]);
 
   const openAddModal = () => {
     setSelectedPatientId("");
@@ -228,11 +237,7 @@ export default function ConsultationsPage() {
   };
 
   if (authLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-success"></div>
-      </div>
-    );
+    return <AdminLoadingSpinner />;
   }
 
   if (!user) {
@@ -362,11 +367,6 @@ export default function ConsultationsPage() {
                           >
                             <i className="bi bi-eye"></i> View
                           </Link>
-                          {c.status === "Open" && (
-                            <button onClick={() => handleMarkComplete(c.id)} className="btn btn-sm btn-outline-success">
-                              <i className="bi bi-check2"></i>
-                            </button>
-                          )}
                           <button onClick={() => handleDelete(c.id)} className="btn btn-sm btn-outline-danger">
                             <i className="bi bi-trash"></i>
                           </button>
@@ -427,11 +427,6 @@ export default function ConsultationsPage() {
                   >
                     <i className="bi bi-eye me-1"></i> View
                   </Link>
-                  {c.status === "Open" && (
-                    <button onClick={() => handleMarkComplete(c.id)} className="btn btn-sm btn-outline-success flex-fill">
-                      <i className="bi bi-check2 me-1"></i> Complete
-                    </button>
-                  )}
                   <button onClick={() => handleDelete(c.id)} className="btn btn-sm btn-outline-danger">
                     <i className="bi bi-trash"></i>
                   </button>

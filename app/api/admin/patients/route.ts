@@ -73,9 +73,15 @@ export async function POST(request: Request) {
     if (medical_history) record.medical_history = Array.isArray(medical_history) ? medical_history : [];
     if (notes) record.notes = notes;
 
+    // Generate patient_code: ADC + year + sequential number
+    const year = new Date().getFullYear().toString();
+    const { count } = await supabase.from('patients').select('id', { count: 'exact', head: true });
+    const nextNum = ((count || 0) + 1).toString().padStart(2, '0');
+    record.patient_code = `ADC${year}${nextNum}`;
+
     const { data, error } = await supabase.from('patients').insert([record]).select();
     if (error) throw error;
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: data?.[0] || data });
   } catch {
     return NextResponse.json({ error: 'Failed to create patient' }, { status: 500 });
   }

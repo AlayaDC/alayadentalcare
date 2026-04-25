@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { createClient } from "../../../utils/supabase/client";
+import AdminLoadingSpinner from "../../../components/AdminLoadingSpinner";
 import AdminLayout from "../../../components/AdminLayout";
 
 const themeColor = "#086351";
@@ -134,11 +135,7 @@ export default function ManageContentPage() {
   };
 
   if (authLoading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-success"></div>
-      </div>
-    );
+    return <AdminLoadingSpinner />;
   }
 
   if (!user) {
@@ -231,7 +228,8 @@ export default function ManageContentPage() {
 
         {loading ? (
           <div className="text-center py-5">
-            <div className="spinner-border text-success"></div>
+            <div className="spinner-border" style={{ color: "#086351" }}></div>
+            <p className="mt-2 text-muted small">Loading content...</p>
           </div>
         ) : (
           <div className="d-flex flex-column gap-3">
