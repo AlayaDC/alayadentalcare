@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '../../../../lib/admin-auth';
 
-const ALLOWED_STATUSES = ['Pending', 'Confirmed', 'Cancelled', 'Check-in', 'Completed'];
+const ALLOWED_STATUSES = ['Pending', 'Cancelled', 'Check-in'];
 const ALLOWED_LOCATIONS = ['chettiyamkinar', 'kurukathani'];
 
 const getAdminSupabase = () => {

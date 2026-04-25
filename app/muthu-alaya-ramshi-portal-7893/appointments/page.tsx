@@ -286,9 +286,7 @@ export default function ManageAppointmentsPage() {
   }, [appointments, activeTab, searchTerm, pastDateFilter, todayString]);
 
   const getStatusBadge = (status: string) => {
-    if (status === 'Confirmed') return <span className="badge bg-success px-3 py-2">Confirmed</span>;
-    if (status === 'Check-in') return <span className="badge bg-info text-white px-3 py-2">Check-in</span>;
-    if (status === 'Completed') return <span className="badge bg-primary px-3 py-2">Completed</span>;
+    if (status === 'Check-in') return <span className="badge bg-info text-white px-3 py-2">Checked In</span>;
     if (status === 'Cancelled') return <span className="badge bg-danger px-3 py-2">Cancelled</span>;
     return <span className="badge bg-warning text-dark px-3 py-2">Pending</span>;
   };
@@ -298,29 +296,11 @@ export default function ManageAppointmentsPage() {
       case 'Pending':
         return (
           <>
-            <button onClick={() => handleUpdateStatus(app.id, 'Confirmed')} className="btn btn-sm btn-outline-success me-2 fw-bold">Confirm</button>
-            <button onClick={() => handleUpdateStatus(app.id, 'Cancelled')} className="btn btn-sm btn-outline-danger fw-bold">Cancel</button>
-          </>
-        );
-      case 'Confirmed':
-        return (
-          <>
             <button onClick={() => handleUpdateStatus(app.id, 'Check-in')} className="btn btn-sm btn-outline-info me-2 fw-bold">Check-in</button>
             <button onClick={() => handleUpdateStatus(app.id, 'Cancelled')} className="btn btn-sm btn-outline-danger fw-bold">Cancel</button>
           </>
         );
       case 'Check-in':
-        return (
-          <>
-            <button onClick={() => handleUpdateStatus(app.id, 'Completed')} className="btn btn-sm btn-outline-primary me-2 fw-bold">Complete</button>
-            {app.patient_id && (
-              <Link href={`/muthu-alaya-ramshi-portal-7893/patients?highlight=${app.patient_id}`} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }}>
-                <i className="bi bi-person-fill me-1"></i>View Patient
-              </Link>
-            )}
-          </>
-        );
-      case 'Completed':
         return app.patient_id ? (
           <Link href={`/muthu-alaya-ramshi-portal-7893/patients?highlight=${app.patient_id}`} className="btn btn-sm fw-bold text-white" style={{ background: THEME.primary }}>
             <i className="bi bi-person-fill me-1"></i>View Patient
