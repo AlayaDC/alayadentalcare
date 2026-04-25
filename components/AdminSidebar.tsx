@@ -16,10 +16,11 @@ const NAV_ITEMS = [
   { key: "appointments", label: "Appointments", icon: "bi-calendar-check", href: `${ADMIN_BASE}/appointments` },
   { key: "consultations", label: "Consultations", icon: "bi-clipboard2-pulse", href: `${ADMIN_BASE}/consultations` },
   { key: "patients", label: "Patients", icon: "bi-people", href: `${ADMIN_BASE}/patients` },
+  { key: "invoices", label: "Invoices", icon: "bi-receipt", href: `${ADMIN_BASE}/invoices` },
+  { key: "label-website", label: "Website Content", icon: "", href: "" },
   { key: "doctors", label: "Doctors", icon: "bi-person-badge", href: `${ADMIN_BASE}/doctors` },
   { key: "services", label: "Services", icon: "bi-stars", href: `${ADMIN_BASE}/services` },
-  { key: "invoices", label: "Invoices", icon: "bi-receipt", href: `${ADMIN_BASE}/invoices` },
-  { key: "content", label: "Website Content", icon: "bi-pencil-square", href: `${ADMIN_BASE}/content` },
+  { key: "content", label: "Contents", icon: "bi-pencil-square", href: `${ADMIN_BASE}/content` },
   { key: "divider", label: "", icon: "", href: "" },
   { key: "settings", label: "Settings", icon: "bi-gear", href: `${ADMIN_BASE}/settings` },
 ];
@@ -98,6 +99,24 @@ export default function AdminSidebar({ currentPage, onLogout }: AdminSidebarProp
                   margin: "12px 8px",
                 }}
               />
+            );
+          }
+
+          if (item.key.startsWith("label-")) {
+            return (
+              <div
+                key={item.key}
+                style={{
+                  padding: "16px 14px 6px",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.35)",
+                  letterSpacing: "0.8px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {item.label}
+              </div>
             );
           }
 
