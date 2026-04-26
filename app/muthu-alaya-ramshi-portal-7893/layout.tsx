@@ -1,15 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import AdminSidebar from "../../components/AdminSidebar";
 import { AdminAuthProvider, useAdminAuth } from "../../components/AdminAuthContext";
+
+function ScrollToTop() {
+  const pathname = usePathname();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const { logout } = useAdminAuth();
 
   return (
     <>
+      <ScrollToTop />
       <style dangerouslySetInnerHTML={{ __html: `
         .admin-layout-main {
           min-height: 100vh;
