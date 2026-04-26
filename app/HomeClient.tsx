@@ -696,6 +696,7 @@ const GlobalStyles = ({
       color: var(--charcoal) !important;
       padding: 0.5rem 0.85rem !important;
       transition: color 0.3s ease;
+      text-decoration: none;
     }
     .nav-link-luxury:hover,
     .nav-link-luxury.active { color: var(--primary) !important; }
