@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 
 export default function ScrollToTop() {
   const pathname = usePathname();
 
-  useEffect(() => {
+  // useLayoutEffect fires before browser paint — prevents visible scroll flash
+  useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
