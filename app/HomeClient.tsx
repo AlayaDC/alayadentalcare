@@ -276,20 +276,24 @@ export default function HomeClient({ initialDoctors, initialServices, siteConten
       AOS.init({ disable: true });
     }
 
-    document.documentElement.style.scrollBehavior = "smooth";
-
     const handleResize = () => {
       if (window.innerWidth >= 992) AOS.refresh();
     };
 
-    const timer = setTimeout(() => {
+    // Enable smooth scroll after initial load to prevent visible scroll on navigation
+    const smoothTimer = setTimeout(() => {
+      document.documentElement.style.scrollBehavior = "smooth";
+    }, 500);
+
+    const aosTimer = setTimeout(() => {
       if (!isMobile) AOS.refresh();
     }, 500);
 
     window.addEventListener("resize", handleResize);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(smoothTimer);
+      clearTimeout(aosTimer);
       window.removeEventListener("resize", handleResize);
       document.documentElement.style.scrollBehavior = "";
     };
@@ -574,9 +578,9 @@ const GlobalStyles = ({
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
-    /* Fixed overflow on html to allow sticky navbar to work */
-    html { 
-      scroll-behavior: smooth; 
+    /* scroll-behavior set via JS after load to prevent visible scroll on navigation */
+    html {
+      scroll-behavior: auto;
     }
 
     body {
